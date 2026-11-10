@@ -1,3 +1,9 @@
-std = "roblox"
+std = "fluent"
+
 [lints]
 global_usage = "allow"
+
+[config]
+# The elements define their methods inside the constructor, so `self` and
+# the names of the options are shadowed on purpose.
+shadowing = { ignore_pattern = "^(_|self|Name|Config|Instant)$" }

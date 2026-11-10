@@ -42,6 +42,9 @@ local SaveManager = {} do
 	SaveManager.Folder = "FluentSettings"
 	SaveManager.Ignore = {}
 
+	-- Fires the callbacks of an element again after its value was loaded.
+	-- While the config is applied the callbacks are suppressed, so without
+	-- this the game would never learn about the loaded values.
 	local function FlushOption(option)
 		local Library = SaveManager.Library
 		if not Library then
@@ -66,11 +69,12 @@ local SaveManager = {} do
 		},
 		Slider = {
 			Save = function(idx, object)
-				return { type = "Slider", idx = idx, value = tostring(object.Value) }
+				return { type = "Slider", idx = idx, value = object.Value }
 			end,
 			Load = function(idx, data)
 				if SaveManager.Options[idx] then 
-					SaveManager.Options[idx]:SetValue(data.value)
+					-- Older configs stored the value as a string.
+					SaveManager.Options[idx]:SetValue(tonumber(data.value) or data.value)
 				end
 			end,
 			Flush = FlushOption,
@@ -145,7 +149,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Save(name)
-		if (not name) then
+		if not name then
 			return false, "no config file is selected"
 		end
 
@@ -181,7 +185,7 @@ local SaveManager = {} do
 	end
 
 	function SaveManager:Load(name)
-		if (not name) then
+		if not name then
 			return false, "no config file is selected"
 		end
 
@@ -235,7 +239,9 @@ local SaveManager = {} do
 
 		if not WasLoading then
 			for _, option in next, loaded do
-				local ok = pcall(self.Parser[option.type].Flush, option.idx, option)
+				-- The flush needs the live element, because only that one holds
+				-- the callbacks. The decoded json only holds the raw value.
+				local ok = pcall(self.Parser[option.type].Flush, self.Options[option.idx])
 				if not ok then
 					applied = false
 				end

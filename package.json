@@ -1,13 +1,19 @@
 {
   "name": "fluentlibrary",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.1.0",
+  "description": "A remake of the Fluent Roblox UI library",
   "main": "init.lua",
   "scripts": {
     "rojo": "mkdirp dist && rojo build -o dist/main.rbxm",
-    "bundle": "lune run build/init"
+    "bundle": "lune run build/init",
+    "test": "lune run spec/run.luau",
+    "lint": "selene src Addons spec --config selene.toml"
   },
-  "keywords": [],
+  "keywords": [
+    "roblox",
+    "ui",
+    "fluent"
+  ],
   "author": "dawid",
   "license": "MIT",
   "devDependencies": {

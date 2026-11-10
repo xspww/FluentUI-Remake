@@ -15,7 +15,7 @@ function Element:New(Idx, Config)
 
 	local Toggle = {
 		Value = Config.Default or false,
-		Callback = Config.Callback or function(Value) end,
+		Callback = Config.Callback or function() end,
 		Type = "Toggle",
 	}
 

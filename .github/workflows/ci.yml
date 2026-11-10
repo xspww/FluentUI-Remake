@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: GitHub Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Aftman
+      uses: ok-nick/setup-aftman@v0.4.2
+
+    - name: Install Aftman
+      run: aftman install
+
+    - name: Lint
+      run: selene src Addons spec --config selene.toml
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: GitHub Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Aftman
+      uses: ok-nick/setup-aftman@v0.4.2
+
+    - name: Install Aftman
+      run: aftman install
+
+    - name: Run the tests
+      run: lune run spec/run.luau
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: GitHub Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+        run_install: true
+
+    - name: Setup Aftman
+      uses: ok-nick/setup-aftman@v0.4.2
+
+    - name: Install Aftman
+      run: aftman install
+
+    - name: Build and Bundle
+      run: pnpm run bundle
+
+    - name: Check the output
+      run: |
+        test -f dist/main.lua
+        test -f dist/main.rbxm

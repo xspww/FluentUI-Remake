@@ -127,10 +127,13 @@ function Creator.Destroy()
 end
 
 function Creator.GetThemeProperty(Property)
-	if Themes[require(Root).Theme][Property] then
-		return Themes[require(Root).Theme][Property]
+	local Current = Themes[require(Root).Theme] or Themes.Dark
+
+	if Current[Property] then
+		return Current[Property]
 	end
-	return Themes["Dark"][Property]
+
+	return Themes.Dark[Property]
 end
 
 function Creator.UpdateTheme()

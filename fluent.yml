@@ -1,0 +1,79 @@
+---
+# The globals that Roblox itself does not know about.
+#
+# The library runs inside executors, which provide a few extra functions.
+# The test harness runs under Lune, which loads its libraries through
+# require with a path instead of an asset id.
+base: roblox
+
+globals:
+  # Lune loads its libraries with a path, Roblox with an asset id.
+  require:
+    args:
+      - type: any
+    returns:
+      - type: any
+
+  # Luau allows extra arguments for a coroutine.
+  coroutine.create:
+    args:
+      - type: function
+      - type: "..."
+        required: false
+    returns:
+      - type: thread
+
+  # Executor functions
+  gethui:
+    args: []
+    returns:
+      - type: table
+  protectgui:
+    args:
+      - type: table
+  getgenv:
+    args: []
+    returns:
+      - type: table
+  isfile:
+    args:
+      - type: string
+    returns:
+      - type: bool
+  isfolder:
+    args:
+      - type: string
+    returns:
+      - type: bool
+  makefolder:
+    args:
+      - type: string
+  readfile:
+    args:
+      - type: string
+    returns:
+      - type: string
+  writefile:
+    args:
+      - type: string
+      - type: string
+  listfiles:
+    args:
+      - type: string
+    returns:
+      - type: string[]
+
+  # The test framework that the specs use
+  describe:
+    args:
+      - type: string
+      - type: function
+  it:
+    args:
+      - type: string
+      - type: function
+  expect:
+    args:
+      - type: any
+    returns:
+      - type: table

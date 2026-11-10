@@ -5,7 +5,6 @@ local Creator = require(Root.Creator)
 
 local New = Creator.New
 local Components = Root.Components
-
 local Element = {}
 Element.__index = Element
 Element.__type = "Keybind"
@@ -44,8 +43,8 @@ function Element:New(Idx, Config)
 		Toggled = false,
 		Mode = ValidModes[Config.Mode] and Config.Mode or "Toggle",
 		Type = "Keybind",
-		Callback = Config.Callback or function(Value) end,
-		ChangedCallback = Config.ChangedCallback or function(New) end,
+		Callback = Config.Callback or function() end,
+		ChangedCallback = Config.ChangedCallback or function() end,
 	}
 
 	local Picking = false

@@ -1,7 +1,6 @@
 local Root = script.Parent.Parent
 local Creator = require(Root.Creator)
 
-local New = Creator.New
 local AddSignal = Creator.AddSignal
 local Components = Root.Components
 
@@ -18,7 +17,7 @@ function Element:New(Idx, Config)
 		Value = Config.Default or "",
 		Numeric = Config.Numeric or false,
 		Finished = Config.Finished or false,
-		Callback = Config.Callback or function(Value) end,
+		Callback = Config.Callback,
 		Type = "Input",
 	}
 

@@ -69,7 +69,7 @@ The full example is in [Example.client.lua](Example.client.lua).
 Call these functions on the library.
 
 - `CreateWindow(Config)` creates the window. The library holds one window.
-- `SetTheme(Name)` changes the theme. The names are in `Main.Themes`.
+- `SetTheme(Name)` changes the theme. The names are in `Main.Themes`. An unknown name is ignored.
 - `ToggleAcrylic(Value)` turns the blur on or off.
 - `ToggleTransparency(Value)` turns the background transparency on or off.
 - `Notify(Config)` shows a notification.
@@ -130,7 +130,7 @@ pnpm install
 pnpm run bundle
 ```
 
-Aftman installs Rojo, Darklua and Lune. Make sure that `~/.aftman/bin` is in your `PATH`.
+Aftman installs Rojo, Darklua, Lune and Selene. Make sure that `~/.aftman/bin` is in your `PATH`.
 
 The build writes two files to the `dist` folder.
 
@@ -138,6 +138,22 @@ The build writes two files to the `dist` folder.
 - `dist/main.lua` is the bundled script. Load it with `loadstring`.
 
 Run `pnpm run rojo` when you only want the place model.
+
+## Tests
+
+The specs live in the `spec` folder. Run them with Lune.
+
+```bash
+pnpm run test
+```
+
+The specs use the same `describe`, `it` and `expect` functions as the tests of the original Flipper library, so they also run in Roblox Studio.
+
+Run the linter with Selene.
+
+```bash
+pnpm run lint
+```
 
 ## Credits
 

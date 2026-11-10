@@ -3,7 +3,7 @@ local AcrylicBlur = require(script.Parent.AcrylicBlur)
 
 local New = Creator.New
 
-return function(props)
+return function()
 	local AcrylicPaint = {}
 
 	AcrylicPaint.Frame = New("Frame", {

@@ -1,9 +1,6 @@
 local Root = script.Parent.Parent
-local Flipper = require(Root.Packages.Flipper)
 local Creator = require(Root.Creator)
 local New = Creator.New
-
-local Spring = Flipper.Spring.new
 
 return function(Title, Desc, Parent, Hover)
 	local Element = {}
@@ -110,8 +107,7 @@ return function(Title, Desc, Parent, Hover)
 	Element:SetDesc(Desc)
 
 	if Hover then
-		local Themes = Root.Themes
-		local Motor, SetTransparency = Creator.SpringMotor(
+		local _, SetTransparency = Creator.SpringMotor(
 			Creator.GetThemeProperty("ElementTransparency"),
 			Element.Frame,
 			"BackgroundTransparency",

@@ -4,7 +4,6 @@ local Creator = require(Root.Creator)
 local Acrylic = require(Root.Acrylic)
 
 local Spring = Flipper.Spring.new
-local Instant = Flipper.Instant.new
 local New = Creator.New
 
 local Notification = {}

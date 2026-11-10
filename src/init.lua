@@ -7,6 +7,7 @@ local Root = script
 local Creator = require(Root.Creator)
 local ElementsTable = require(Root.Elements)
 local Acrylic = require(Root.Acrylic)
+local Themes = require(Root.Themes)
 local Components = Root.Components
 local NotificationModule = require(Components.Notification)
 
@@ -63,7 +64,7 @@ local Library = {
 
 	OpenFrames = {},
 	Options = {},
-	Themes = require(Root.Themes).Names,
+	Themes = Themes.Names,
 
 	Window = nil,
 	WindowFrame = nil,
@@ -152,9 +153,6 @@ end
 
 local Elements = {}
 Elements.__index = Elements
-Elements.__namecall = function(Table, Key, ...)
-	return Elements[Key](...)
-end
 
 for _, ElementComponent in ipairs(ElementsTable) do
 	Elements["Add" .. ElementComponent.__type] = function(self, Idx, Config)
@@ -180,7 +178,13 @@ function Library:CreateWindow(Config)
 	Library.MinimizeKey = Config.MinimizeKey or Enum.KeyCode.LeftControl
 	Library.UseAcrylic = Config.Acrylic or false
 	Library.Acrylic = Config.Acrylic or false
-	Library.Theme = Config.Theme or "Dark"
+
+	-- The theme has to be a known one. The window is built right below and
+	-- every themed object looks the theme up while it is created, so an
+	-- unknown name would crash the window instead of falling back.
+	local Theme = Themes.Resolve(Config.Theme)
+	Library.Theme = Theme
+
 	if Config.Acrylic then
 		Acrylic.init()
 	end
@@ -194,13 +198,15 @@ function Library:CreateWindow(Config)
 	})
 
 	Library.Window = Window
-	Library:SetTheme(Config.Theme)
+	Library:SetTheme(Theme)
 
 	return Window
 end
 
 function Library:SetTheme(Value)
-	if Library.Window and table.find(Library.Themes, Value) then
+	-- An unknown name is ignored, so the theme of the window stays the
+	-- same.
+	if Library.Window and Themes.Exists(Value) then
 		Library.Theme = Value
 		Creator.UpdateTheme()
 	end
@@ -230,6 +236,14 @@ function Library:Destroy()
 	end
 
 	Library.GUI:Destroy()
+
+	-- Drop the references to the instances and the elements, otherwise they
+	-- stay alive until the script is unloaded. The tables are cleared and not
+	-- replaced, because other parts of the library hold on to them.
+	table.clear(Library.Options)
+	table.clear(Library.OpenFrames)
+	Library.Window = nil
+	Library.WindowFrame = nil
 end
 
 function Library:ToggleAcrylic(Value)
@@ -259,6 +273,8 @@ function Library:Notify(Config)
 	return NotificationModule:New(Config)
 end
 
+-- The library is published as a global, so a script can reach it without
+-- holding on to the return value.
 if getgenv then
 	getgenv().Fluent = Library
 end

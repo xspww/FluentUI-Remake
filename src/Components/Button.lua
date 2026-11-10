@@ -1,11 +1,8 @@
 local Root = script.Parent.Parent
-local Flipper = require(Root.Packages.Flipper)
 local Creator = require(Root.Creator)
 local New = Creator.New
 
-local Spring = Flipper.Spring.new
-
-return function(Theme, Parent, DialogCheck)
+return function(_, Parent, DialogCheck)
 	DialogCheck = DialogCheck or false
 	local Button = {}
 
@@ -58,7 +55,7 @@ return function(Theme, Parent, DialogCheck)
 		Button.Title,
 	})
 
-	local Motor, SetTransparency = Creator.SpringMotor(1, Button.HoverFrame, "BackgroundTransparency", DialogCheck)
+	local _, SetTransparency = Creator.SpringMotor(1, Button.HoverFrame, "BackgroundTransparency", DialogCheck)
 	Creator.AddSignal(Button.Frame.MouseEnter, function()
 		SetTransparency(0.97)
 	end)

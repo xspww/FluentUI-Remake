@@ -1,13 +1,6 @@
-local UserInputService = game:GetService("UserInputService")
-local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
-local Camera = game:GetService("Workspace").CurrentCamera
-
 local Root = script.Parent.Parent
-local Flipper = require(Root.Packages.Flipper)
 local Creator = require(Root.Creator)
 
-local Spring = Flipper.Spring.new
-local Instant = Flipper.Instant.new
 local New = Creator.New
 
 local Dialog = {
@@ -36,7 +29,7 @@ function Dialog:Create()
 		}),
 	})
 
-	local TintMotor, TintTransparency = Creator.SpringMotor(1, NewDialog.TintFrame, "BackgroundTransparency", true)
+	local _, TintTransparency = Creator.SpringMotor(1, NewDialog.TintFrame, "BackgroundTransparency", true)
 
 	NewDialog.ButtonHolder = New("Frame", {
 		Size = UDim2.new(1, -40, 1, -40),
@@ -91,7 +84,7 @@ function Dialog:Create()
 		Scale = 1,
 	})
 
-	local ScaleMotor, Scale = Creator.SpringMotor(1.1, NewDialog.Scale, "Scale")
+	local _, Scale = Creator.SpringMotor(1.1, NewDialog.Scale, "Scale")
 
 	NewDialog.Root = New("CanvasGroup", {
 		Size = UDim2.fromOffset(300, 165),
@@ -117,7 +110,7 @@ function Dialog:Create()
 		NewDialog.ButtonHolderFrame,
 	})
 
-	local RootMotor, RootTransparency = Creator.SpringMotor(1, NewDialog.Root, "GroupTransparency")
+	local _, RootTransparency = Creator.SpringMotor(1, NewDialog.Root, "GroupTransparency")
 
 	function NewDialog:Open()
 		require(Root).DialogOpen = true

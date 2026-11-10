@@ -1,4 +1,3 @@
--- i will rewrite this someday
 local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 local Workspace = game:GetService("Workspace")
@@ -445,6 +444,8 @@ return function(Config)
 		local Dialog = DialogModule:Create()
 		Dialog.Title.Text = Config.Title
 
+		Config.Buttons = Config.Buttons or {}
+
 		local Content = New("TextLabel", {
 			FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json"),
 			Text = Config.Content,
@@ -488,7 +489,7 @@ return function(Config)
 	end
 
 	function Window:SelectTab(Tab)
-		TabModule:SelectTab(1)
+		TabModule:SelectTab(Tab)
 	end
 
 	Creator.AddSignal(Window.TabHolder:GetPropertyChangedSignal("CanvasPosition"), function()

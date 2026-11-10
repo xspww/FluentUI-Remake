@@ -20,7 +20,7 @@ function Element:New(Idx, Config)
 		Transparency = Config.Transparency or 0,
 		Type = "Colorpicker",
 		Title = type(Config.Title) == "string" and Config.Title or "Colorpicker",
-		Callback = Config.Callback or function(Color) end,
+		Callback = Config.Callback or function() end,
 	}
 
 	function Colorpicker:SetHSVFromRGB(Color)
@@ -49,7 +49,7 @@ function Element:New(Idx, Config)
 		}),
 	})
 
-	local DisplayFrame = New("ImageLabel", {
+	New("ImageLabel", {
 		Size = UDim2.fromOffset(26, 26),
 		Position = UDim2.new(1, -10, 0.5, 0),
 		AnchorPoint = Vector2.new(1, 0.5),
@@ -178,7 +178,7 @@ function Element:New(Idx, Config)
 			}),
 		})
 
-		local OldColorFrameChecker = New("ImageLabel", {
+		New("ImageLabel", {
 			Image = "rbxassetid://14204231522",
 			ImageTransparency = 0.45,
 			ScaleType = Enum.ScaleType.Tile,
@@ -208,7 +208,7 @@ function Element:New(Idx, Config)
 			}),
 		})
 
-		local DialogDisplayFrameChecker = New("ImageLabel", {
+		New("ImageLabel", {
 			Image = "rbxassetid://14204231522",
 			ImageTransparency = 0.45,
 			ScaleType = Enum.ScaleType.Tile,

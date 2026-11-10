@@ -4,7 +4,6 @@ local Creator = require(Root.Creator)
 
 local New = Creator.New
 local Spring = Flipper.Spring.new
-local Instant = Flipper.Instant.new
 local Components = Root.Components
 
 local TabModule = {
@@ -168,6 +167,11 @@ end
 function TabModule:SelectTab(Tab)
 	local Window = TabModule.Window
 
+	local Target = TabModule.Tabs[Tab]
+	if not Target then
+		return
+	end
+
 	TabModule.SelectedTab = Tab
 
 	for _, TabObject in next, TabModule.Tabs do
@@ -177,7 +181,7 @@ function TabModule:SelectTab(Tab)
 	TabModule.Tabs[Tab].SetTransparency(0.89)
 	TabModule.Tabs[Tab].Selected = true
 
-	Window.TabDisplay.Text = TabModule.Tabs[Tab].Name
+	Window.TabDisplay.Text = Target.Name
 	Window.SelectorPosMotor:setGoal(Spring(TabModule:GetCurrentTabPos(), { frequency = 6 }))
 
 	task.spawn(function()

@@ -1,7 +1,6 @@
 local Root = script.Parent.Parent
 local Assets = require(script.Parent.Assets)
 local Creator = require(Root.Creator)
-local Flipper = require(Root.Packages.Flipper)
 
 local New = Creator.New
 local AddSignal = Creator.AddSignal
@@ -43,7 +42,7 @@ return function(Config)
 			}),
 		})
 
-		local Motor, SetTransparency = Creator.SpringMotor(1, Button.Frame, "BackgroundTransparency")
+		local _, SetTransparency = Creator.SpringMotor(1, Button.Frame, "BackgroundTransparency")
 
 		AddSignal(Button.Frame.MouseEnter, function()
 			SetTransparency(0.94)
