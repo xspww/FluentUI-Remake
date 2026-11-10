@@ -11,7 +11,7 @@ The library gives you a window, tabs, sections and the usual elements. It runs i
 
 - Works with a mouse and with touch
 - Acrylic blur behind the window
-- Six themes
+- Seven themes, including a navy blue one
 - Does not need `syn`
 
 ## Install
