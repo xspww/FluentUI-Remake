@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [ published, prereleased ]
+    
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: GitHub Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup PNPM
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+        run_install: true
+    
+    - name: Setup Aftman
+      uses: ok-nick/setup-aftman@v0.4.2
+    
+    - name: Install Rojo, Lune and DarkLua
+      run: aftman install
+        
+    - name: Build and Bundle
+      run: pnpm run bundle
+
+    - name: Upload Release Assets
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.event.release.tag_name }}
+        files: |
+          dist/main.rbxm
+          dist/main.lua
+
+    - name: Upload Build Artifacts
+      if: github.event_name == 'workflow_dispatch'
+      uses: actions/upload-artifact@v4
+      with:
+        name: fluent-build
+        path: |
+          dist/main.rbxm
+          dist/main.lua
