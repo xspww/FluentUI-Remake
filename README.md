@@ -104,13 +104,13 @@ structure, and fixes what was broken.
 Load it through a GitHub Release:
 
 ```lua
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/xspww/FluentUI-Remake/releases/latest/download/main.lua"))()
 ```
 
 Or build it yourself, see [Building from source](#-building-from-source).
 
-> If you publish your own release, replace the url above with the one of your
-> repository. The same applies to the addon urls further down.
+> The release asset is built by the GitHub Actions workflow, so the url only
+> works once a release has been published on this repository.
 <br/>
 
 ## 📜 Quick start
@@ -261,7 +261,7 @@ Both addons live in the `Addons` folder and only need the library instance.
 ### Save manager
 
 ```lua
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/xspww/FluentUI-Remake/main/Addons/SaveManager.lua"))()
 
 SaveManager:SetLibrary(Main)
 SaveManager:BuildFolderTree()
@@ -283,7 +283,7 @@ SaveManager:BuildConfigSection(Tab)
 ### Interface manager
 
 ```lua
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/xspww/FluentUI-Remake/main/Addons/InterfaceManager.lua"))()
 
 InterfaceManager:SetLibrary(Main)
 InterfaceManager:BuildFolderTree()
