@@ -26,7 +26,7 @@ function Element:New(Idx, Config)
 	Input.SetTitle = InputFrame.SetTitle
 	Input.SetDesc = InputFrame.SetDesc
 
-	local Textbox = require(Components.Textbox)(InputFrame.Frame, true)
+	local Textbox = require(Components.Textbox)(InputFrame.Frame)
 	Textbox.Frame.Position = UDim2.new(1, -10, 0.5, 0)
 	Textbox.Frame.AnchorPoint = Vector2.new(1, 0.5)
 	Textbox.Frame.Size = UDim2.fromOffset(160, 30)

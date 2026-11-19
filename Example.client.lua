@@ -4,8 +4,7 @@ local Window = Main:CreateWindow({
     Title = "Fluent " .. Main.Version,
     SubTitle = "by dawid",
     TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
+    Size = UDim2.fromOffset(635, 541),
     Theme = "Dark"
 })
 
@@ -172,26 +171,6 @@ do
         Default = Main.Theme,
         Callback = function(Value)
             Main:SetTheme(Value)
-        end
-    })
-
-    if Main.UseAcrylic then
-        InterfaceSection:AddToggle("AcrylicToggle", {
-            Title = "Acrylic",
-            Description = "The blurred background requires graphic quality 8+",
-            Default = Main.Acrylic,
-            Callback = function(Value)
-                Main:ToggleAcrylic(Value)
-            end
-        })
-    end
-
-    InterfaceSection:AddToggle("TransparentToggle", {
-        Title = "Transparency",
-        Description = "Makes the interface transparent.",
-        Default = Main.Transparency,
-        Callback = function(Value)
-            Main:ToggleTransparency(Value)
         end
     })
 

@@ -3,8 +3,7 @@ local Root = script.Parent.Parent
 local Creator = require(Root.Creator)
 local New = Creator.New
 
-return function(Parent, Acrylic)
-	Acrylic = Acrylic or false
+return function(Parent)
 	local Textbox = {}
 
 	Textbox.Input = New("TextBox", {
@@ -37,18 +36,18 @@ return function(Parent, Acrylic)
 		Size = UDim2.new(1, -4, 0, 1),
 		Position = UDim2.new(0, 2, 1, 0),
 		AnchorPoint = Vector2.new(0, 1),
-		BackgroundTransparency = Acrylic and 0.5 or 0,
+		BackgroundTransparency = 0,
 		ThemeTag = {
-			BackgroundColor3 = Acrylic and "InputIndicator" or "DialogInputLine",
+			BackgroundColor3 = "DialogInputLine",
 		},
 	})
 
 	Textbox.Frame = New("Frame", {
 		Size = UDim2.new(0, 0, 0, 30),
-		BackgroundTransparency = Acrylic and 0.9 or 0,
+		BackgroundTransparency = 0,
 		Parent = Parent,
 		ThemeTag = {
-			BackgroundColor3 = Acrylic and "Input" or "DialogInput",
+			BackgroundColor3 = "DialogInput",
 		},
 	}, {
 		New("UICorner", {
@@ -56,9 +55,9 @@ return function(Parent, Acrylic)
 		}),
 		New("UIStroke", {
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Transparency = Acrylic and 0.5 or 0.65,
+			Transparency = 0.65,
 			ThemeTag = {
-				Color = Acrylic and "InElementBorder" or "DialogButtonBorder",
+				Color = "DialogButtonBorder",
 			},
 		}),
 		Textbox.Indicator,
@@ -102,7 +101,7 @@ return function(Parent, Acrylic)
 		Textbox.Indicator.Size = UDim2.new(1, -2, 0, 2)
 		Textbox.Indicator.Position = UDim2.new(0, 1, 1, 0)
 		Textbox.Indicator.BackgroundTransparency = 0
-		Creator.OverrideTag(Textbox.Frame, { BackgroundColor3 = Acrylic and "InputFocused" or "DialogHolder" })
+		Creator.OverrideTag(Textbox.Frame, { BackgroundColor3 = "DialogHolder" })
 		Creator.OverrideTag(Textbox.Indicator, { BackgroundColor3 = "Accent" })
 	end)
 
@@ -111,8 +110,8 @@ return function(Parent, Acrylic)
 		Textbox.Indicator.Size = UDim2.new(1, -4, 0, 1)
 		Textbox.Indicator.Position = UDim2.new(0, 2, 1, 0)
 		Textbox.Indicator.BackgroundTransparency = 0.5
-		Creator.OverrideTag(Textbox.Frame, { BackgroundColor3 = Acrylic and "Input" or "DialogInput" })
-		Creator.OverrideTag(Textbox.Indicator, { BackgroundColor3 = Acrylic and "InputIndicator" or "DialogInputLine" })
+		Creator.OverrideTag(Textbox.Frame, { BackgroundColor3 = "DialogInput" })
+		Creator.OverrideTag(Textbox.Indicator, { BackgroundColor3 = "DialogInputLine" })
 	end)
 
 	return Textbox

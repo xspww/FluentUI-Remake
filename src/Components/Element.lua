@@ -2,7 +2,7 @@ local Root = script.Parent.Parent
 local Creator = require(Root.Creator)
 local New = Creator.New
 
-return function(Title, Desc, Parent, Hover)
+return function(Title, Desc, Parent, _Hover)
 	local Element = {}
 
 	Element.TitleLabel = New("TextLabel", {
@@ -65,7 +65,7 @@ return function(Title, Desc, Parent, Hover)
 
 	Element.Frame = New("TextButton", {
 		Size = UDim2.new(1, 0, 0, 0),
-		BackgroundTransparency = 0.89,
+		BackgroundTransparency = 0,
 		BackgroundColor3 = Color3.fromRGB(130, 130, 130),
 		Parent = Parent,
 		AutomaticSize = Enum.AutomaticSize.Y,
@@ -73,7 +73,6 @@ return function(Title, Desc, Parent, Hover)
 		LayoutOrder = 7,
 		ThemeTag = {
 			BackgroundColor3 = "Element",
-			BackgroundTransparency = "ElementTransparency",
 		},
 	}, {
 		New("UICorner", {
@@ -105,29 +104,6 @@ return function(Title, Desc, Parent, Hover)
 
 	Element:SetTitle(Title)
 	Element:SetDesc(Desc)
-
-	if Hover then
-		local _, SetTransparency = Creator.SpringMotor(
-			Creator.GetThemeProperty("ElementTransparency"),
-			Element.Frame,
-			"BackgroundTransparency",
-			false,
-			true
-		)
-
-		Creator.AddSignal(Element.Frame.MouseEnter, function()
-			SetTransparency(Creator.GetThemeProperty("ElementTransparency") - Creator.GetThemeProperty("HoverChange"))
-		end)
-		Creator.AddSignal(Element.Frame.MouseLeave, function()
-			SetTransparency(Creator.GetThemeProperty("ElementTransparency"))
-		end)
-		Creator.AddSignal(Element.Frame.MouseButton1Down, function()
-			SetTransparency(Creator.GetThemeProperty("ElementTransparency") + Creator.GetThemeProperty("HoverChange"))
-		end)
-		Creator.AddSignal(Element.Frame.MouseButton1Up, function()
-			SetTransparency(Creator.GetThemeProperty("ElementTransparency") - Creator.GetThemeProperty("HoverChange"))
-		end)
-	end
 
 	return Element
 end

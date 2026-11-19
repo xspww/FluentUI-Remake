@@ -6,10 +6,10 @@ local UserInputService = game:GetService("UserInputService")
 local Root = script
 local Creator = require(Root.Creator)
 local ElementsTable = require(Root.Elements)
-local Acrylic = require(Root.Acrylic)
 local Themes = require(Root.Themes)
 local Components = Root.Components
 local NotificationModule = require(Components.Notification)
+local DynamicIsland = require(Components.DynamicIsland)
 
 local New = Creator.New
 
@@ -72,9 +72,6 @@ local Library = {
 
 	Theme = "Dark",
 	DialogOpen = false,
-	UseAcrylic = false,
-	Acrylic = false,
-	Transparency = true,
 	MinimizeKeybind = nil,
 	MinimizeKey = Enum.KeyCode.LeftControl,
 
@@ -176,18 +173,12 @@ function Library:CreateWindow(Config)
 	end
 
 	Library.MinimizeKey = Config.MinimizeKey or Enum.KeyCode.LeftControl
-	Library.UseAcrylic = Config.Acrylic or false
-	Library.Acrylic = Config.Acrylic or false
 
 	-- The theme has to be a known one. The window is built right below and
 	-- every themed object looks the theme up while it is created, so an
 	-- unknown name would crash the window instead of falling back.
 	local Theme = Themes.Resolve(Config.Theme)
 	Library.Theme = Theme
-
-	if Config.Acrylic then
-		Acrylic.init()
-	end
 
 	local Window = require(Components.Window)({
 		Parent = GUI,
@@ -199,6 +190,10 @@ function Library:CreateWindow(Config)
 
 	Library.Window = Window
 	Library:SetTheme(Theme)
+
+	if Config.DynamicIsland ~= false then
+		Library.DynamicIsland = DynamicIsland(Library, GUI)
+	end
 
 	return Window
 end
@@ -219,17 +214,12 @@ function Library:Destroy()
 
 	Library.Unloaded = true
 
-	if Library.UseAcrylic then
-		local Paint = Library.Window and Library.Window.AcrylicPaint
-		if Paint and Paint.Model then
-			Paint.Model:Destroy()
-		end
-		if Acrylic.Destroy then
-			Acrylic.Destroy()
-		end
-	end
-
 	Creator.Destroy()
+
+	if Library.DynamicIsland then
+		Library.DynamicIsland:Destroy()
+		Library.DynamicIsland = nil
+	end
 
 	if Library.Window then
 		Library.Window:Destroy()
@@ -244,29 +234,6 @@ function Library:Destroy()
 	table.clear(Library.OpenFrames)
 	Library.Window = nil
 	Library.WindowFrame = nil
-end
-
-function Library:ToggleAcrylic(Value)
-	if Library.Window and Library.UseAcrylic then
-		local Paint = Library.Window.AcrylicPaint
-		if not Paint or not Paint.Model then
-			return
-		end
-
-		Library.Acrylic = Value
-		Paint.Model.Transparency = Value and 0.98 or 1
-		if Value then
-			Acrylic.Enable()
-		else
-			Acrylic.Disable()
-		end
-	end
-end
-
-function Library:ToggleTransparency(Value)
-	if Library.Window then
-		Library.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = Value and 0.35 or 0
-	end
 end
 
 function Library:Notify(Config)

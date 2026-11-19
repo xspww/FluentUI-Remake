@@ -5,7 +5,6 @@ local Flipper = require(Root.Packages.Flipper)
 local Creator = {
 	Registry = {},
 	Signals = {},
-	TransparencyMotors = {},
 	DefaultProperties = {
 		ScreenGui = {
 			ResetOnSpawn = false,
@@ -116,13 +115,6 @@ end
 function Creator.Destroy()
 	Creator.Disconnect()
 
-	for Idx = #Creator.TransparencyMotors, 1, -1 do
-		local Motor = table.remove(Creator.TransparencyMotors, Idx)
-		pcall(function()
-			Motor:stop()
-		end)
-	end
-
 	table.clear(Creator.Registry)
 end
 
@@ -141,10 +133,6 @@ function Creator.UpdateTheme()
 		for Property, ColorIdx in next, Object.Properties do
 			Instance[Property] = Creator.GetThemeProperty(ColorIdx)
 		end
-	end
-
-	for _, Motor in next, Creator.TransparencyMotors do
-		Motor:setGoal(Flipper.Instant.new(Creator.GetThemeProperty("ElementTransparency")))
 	end
 end
 
@@ -202,42 +190,21 @@ function Creator.New(Name, Properties, Children)
 	return Object
 end
 
-function Creator.SpringMotor(Initial, Instance, Prop, IgnoreDialogCheck, ResetOnThemeChange)
-	IgnoreDialogCheck = IgnoreDialogCheck or false
-	ResetOnThemeChange = ResetOnThemeChange or false
+function Creator.SpringMotor(Initial, Instance, Prop)
 	local Motor = Flipper.SingleMotor.new(Initial)
 	Motor:onStep(function(value)
 		Instance[Prop] = value
 	end)
 
-	if ResetOnThemeChange then
-		table.insert(Creator.TransparencyMotors, Motor)
-	end
-
 	-- A destroyed element should never leave its motor connected to
 	-- RenderStepped, otherwise every removed option keeps ticking forever.
 	Instance.Destroying:Connect(function()
 		Motor:stop()
-
-		local Index = table.find(Creator.TransparencyMotors, Motor)
-		if Index then
-			table.remove(Creator.TransparencyMotors, Index)
-		end
 	end)
 
-	local function SetValue(Value, Ignore)
-		Ignore = Ignore or false
-		if not IgnoreDialogCheck then
-			if not Ignore then
-				if Prop == "BackgroundTransparency" and require(Root).DialogOpen then
-					return
-				end
-			end
-		end
+	return Motor, function(Value)
 		Motor:setGoal(Flipper.Spring.new(Value, { frequency = 8 }))
 	end
-
-	return Motor, SetValue
 end
 
 return Creator

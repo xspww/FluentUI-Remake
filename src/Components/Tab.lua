@@ -11,6 +11,7 @@ local TabModule = {
 	Tabs = {},
 	Containers = {},
 	SelectedTab = 0,
+	SwitchToken = 0,
 	TabCount = 0,
 }
 
@@ -125,20 +126,6 @@ function TabModule:New(Title, Icon, Parent)
 		Tab.ContainerFrame.CanvasSize = UDim2.new(0, 0, 0, ContainerLayout.AbsoluteContentSize.Y + 2)
 	end)
 
-	Tab.Motor, Tab.SetTransparency = Creator.SpringMotor(1, Tab.Frame, "BackgroundTransparency")
-
-	Creator.AddSignal(Tab.Frame.MouseEnter, function()
-		Tab.SetTransparency(Tab.Selected and 0.85 or 0.89)
-	end)
-	Creator.AddSignal(Tab.Frame.MouseLeave, function()
-		Tab.SetTransparency(Tab.Selected and 0.89 or 1)
-	end)
-	Creator.AddSignal(Tab.Frame.MouseButton1Down, function()
-		Tab.SetTransparency(0.92)
-	end)
-	Creator.AddSignal(Tab.Frame.MouseButton1Up, function()
-		Tab.SetTransparency(Tab.Selected and 0.85 or 0.89)
-	end)
 	Creator.AddSignal(Tab.Frame.MouseButton1Click, function()
 		TabModule:SelectTab(TabIndex)
 	end)
@@ -175,21 +162,25 @@ function TabModule:SelectTab(Tab)
 	TabModule.SelectedTab = Tab
 
 	for _, TabObject in next, TabModule.Tabs do
-		TabObject.SetTransparency(1)
 		TabObject.Selected = false
 	end
-	TabModule.Tabs[Tab].SetTransparency(0.89)
-	TabModule.Tabs[Tab].Selected = true
+	Target.Selected = true
 
 	Window.TabDisplay.Text = Target.Name
 	Window.SelectorPosMotor:setGoal(Spring(TabModule:GetCurrentTabPos(), { frequency = 6 }))
 
+	-- A new selection invalidates the in-flight switch so two threads never
+	-- write the container motors or visibility at the same time.
+	TabModule.SwitchToken = TabModule.SwitchToken + 1
+	local Token = TabModule.SwitchToken
+
+	Window.ContainerHolder.Parent = Window.ContainerAnim
+	Window.ContainerPosMotor:setGoal(Spring(15, { frequency = 10 }))
+	Window.ContainerBackMotor:setGoal(Spring(1, { frequency = 10 }))
+
 	task.spawn(function()
-		Window.ContainerHolder.Parent = Window.ContainerAnim
-		
-		Window.ContainerPosMotor:setGoal(Spring(15, { frequency = 10 }))
-		Window.ContainerBackMotor:setGoal(Spring(1, { frequency = 10 }))
 		task.wait(0.12)
+		if Token ~= TabModule.SwitchToken then return end
 		for _, Container in next, TabModule.Containers do
 			Container.Visible = false
 		end
@@ -197,6 +188,7 @@ function TabModule:SelectTab(Tab)
 		Window.ContainerPosMotor:setGoal(Spring(0, { frequency = 5 }))
 		Window.ContainerBackMotor:setGoal(Spring(0, { frequency = 8 }))
 		task.wait(0.12)
+		if Token ~= TabModule.SwitchToken then return end
 		Window.ContainerHolder.Parent = Window.ContainerCanvas
 	end)
 end

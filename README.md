@@ -10,7 +10,6 @@ A remake of [dawid-scripts/Fluent](https://github.com/dawid-scripts/Fluent). It 
 The library gives you a window, tabs, sections and the usual elements. It runs in Roblox Studio and in executors. The API is the same as the original.
 
 - Works with a mouse and with touch
-- Acrylic blur behind the window
 - Seven themes, including a navy blue one
 - Does not need `syn`
 
@@ -70,8 +69,6 @@ Call these functions on the library.
 
 - `CreateWindow(Config)` creates the window. The library holds one window.
 - `SetTheme(Name)` changes the theme. The names are in `Main.Themes`. An unknown name is ignored.
-- `ToggleAcrylic(Value)` turns the blur on or off.
-- `ToggleTransparency(Value)` turns the background transparency on or off.
 - `Notify(Config)` shows a notification.
 - `GetIcon(Name)` returns the url of a Lucide icon.
 - `Destroy()` removes the window, the elements and the signals.
@@ -162,5 +159,4 @@ This remake keeps the credits of the original project. The list below names ever
 - [dawid-scripts/Fluent](https://github.com/dawid-scripts/Fluent), the original project
 - [richie0866/remote-spy](https://github.com/richie0866/remote-spy), the UI assets
 - [violin-suzutsuki/LinoriaLib](https://github.com/violin-suzutsuki/LinoriaLib), the elements and the save manager
-- [7kayoh/Acrylic](https://github.com/7kayoh/Acrylic), the acrylic module
 - [Latte Softworks & Kotera](https://discord.gg/rMMByr4qas), the bundler

@@ -1,7 +1,6 @@
 local Root = script.Parent.Parent
 local Flipper = require(Root.Packages.Flipper)
 local Creator = require(Root.Creator)
-local Acrylic = require(Root.Acrylic)
 
 local Spring = Flipper.Spring.new
 local New = Creator.New
@@ -35,7 +34,17 @@ function Notification:New(Config)
 		Closed = false,
 	}
 
-	NewNotification.AcrylicPaint = Acrylic.AcrylicPaint()
+	NewNotification.Background = New("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 0,
+		ThemeTag = {
+			BackgroundColor3 = "Background",
+		},
+	}, {
+		New("UICorner", {
+			CornerRadius = UDim.new(0, 8),
+		}),
+	})
 
 	NewNotification.Title = New("TextLabel", {
 		Position = UDim2.new(0, 14, 0, 17),
@@ -127,7 +136,7 @@ function Notification:New(Config)
 		Size = UDim2.new(1, 0, 1, 0),
 		Position = UDim2.fromScale(1, 0),
 	}, {
-		NewNotification.AcrylicPaint.Frame,
+		NewNotification.Background,
 		NewNotification.Title,
 		NewNotification.CloseButton,
 		NewNotification.LabelHolder,
@@ -185,9 +194,6 @@ function Notification:New(Config)
 					Offset = Spring(60, { frequency = 5 }),
 				})
 				task.wait(0.4)
-				if require(Root).UseAcrylic and NewNotification.AcrylicPaint.Model then
-					NewNotification.AcrylicPaint.Model:Destroy()
-				end
 				if NewNotification.Holder.Parent then
 					NewNotification.Holder:Destroy()
 				end

@@ -26,11 +26,9 @@ function TabModule:SelectTab(Tab)
 	self.SelectedTab = Tab
 
 	for _, TabObject in next, self.Tabs do
-		TabObject.SetTransparency(1)
 		TabObject.Selected = false
 	end
 
-	Target.SetTransparency(0.89)
 	Target.Selected = true
 end
 
@@ -40,7 +38,6 @@ local function makeTab(Name)
 		Name = Name,
 		Selected = false,
 		Frame = { AbsolutePosition = { Y = 0 } },
-		SetTransparency = function() end,
 	}
 end
 

@@ -1,17 +1,20 @@
 local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local Root = script.Parent.Parent
 local Flipper = require(Root.Packages.Flipper)
 local Creator = require(Root.Creator)
-local Acrylic = require(Root.Acrylic)
-local Assets = require(script.Parent.Assets)
 local Components = script.Parent
 
 local Spring = Flipper.Spring.new
 local Instant = Flipper.Instant.new
 local New = Creator.New
+
+-- The window size is fixed. Resizing and maximizing were removed, so this is
+-- the only size the window can ever have.
+local WINDOW_SIZE = UDim2.fromOffset(635, 541)
 
 local function GetViewportSize()
 	local Camera = Workspace.CurrentCamera
@@ -37,13 +40,12 @@ return function(Config)
 
 	local Window = {
 		Minimized = false,
-		Maximized = false,
-		Size = Config.Size,
+		Size = WINDOW_SIZE,
 		CurrentPos = 0,
 		TabWidth = 0,
 		Position = UDim2.fromOffset(
-			Viewport.X / 2 - Config.Size.X.Offset / 2,
-			Viewport.Y / 2 - Config.Size.Y.Offset / 2
+			Viewport.X / 2 - WINDOW_SIZE.X.Offset / 2,
+			Viewport.Y / 2 - WINDOW_SIZE.Y.Offset / 2
 		),
 	}
 
@@ -51,10 +53,6 @@ return function(Config)
 	local DragTouch = nil
 	local DragStartInput = nil
 	local DragStartPos = nil
-	local Resizing = false
-	local ResizeTouch = nil
-	local ResizeStartInput = nil
-	local ResizeStartSize = nil
 	local MinimizeNotif = false
 
 	local function ClampToViewport(Position, Size)
@@ -71,7 +69,18 @@ return function(Config)
 		return Vector2.new(math.clamp(Position.X, 0, MaxX), math.clamp(Position.Y, 0, MaxY))
 	end
 
-	Window.AcrylicPaint = Acrylic.AcrylicPaint()
+	Window.BackgroundCorner = New("UICorner", { CornerRadius = UDim.new(0, 8) })
+
+	Window.Background = New("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 0,
+		ThemeTag = {
+			BackgroundColor3 = "Background",
+		},
+	}, {
+		Window.BackgroundCorner,
+	})
+
 	Window.TabWidth = Config.TabWidth
 
 	local Selector = New("Frame", {
@@ -86,12 +95,6 @@ return function(Config)
 		New("UICorner", {
 			CornerRadius = UDim.new(0, 2),
 		}),
-	})
-
-	local ResizeStartFrame = New("Frame", {
-		Size = UDim2.fromOffset(20, 20),
-		BackgroundTransparency = 1,
-		Position = UDim2.new(1, -20, 1, -20),
 	})
 
 	Window.TabHolder = New("ScrollingFrame", {
@@ -153,18 +156,84 @@ return function(Config)
 		Window.ContainerHolder
 	})
 
-	Window.Root = New("Frame", {
+	-- A CanvasGroup gives one cheap group-alpha for the whole window.
+	Window.Root = New("CanvasGroup", {
 		BackgroundTransparency = 1,
+		GroupTransparency = 0,
 		Size = Window.Size,
 		Position = Window.Position,
 		Parent = Config.Parent,
 	}, {
-		Window.AcrylicPaint.Frame,
+		Window.Background,
 		Window.TabDisplay,
 		Window.ContainerCanvas,
 		TabFrame,
-		ResizeStartFrame,
 	})
+
+	-- The WINDOW ITSELF becomes the pill. Width and height get independent
+	-- springs (Apple §3), the corner radius follows height so the rectangle
+	-- turns into a capsule, and the centre travels to the island (§7).
+	local ISLAND_CENTRE = Vector2.new(Viewport.X / 2, 10 + 34 / 2)
+	local PILL_SIZE = Vector2.new(52, 34)
+	local OPEN_SIZE = Vector2.new(Window.Size.X.Offset, Window.Size.Y.Offset)
+	local WINDOW_CORNER, PILL_CORNER = 8, 17
+
+	Window.WidthMotor = Flipper.SingleMotor.new(OPEN_SIZE.X)
+	Window.HeightMotor = Flipper.SingleMotor.new(OPEN_SIZE.Y)
+
+	-- Read the island's LIVE centre instead of trusting a hard-coded offset.
+	-- The island can move with safe-area insets or a layout change, and its
+	-- press feedback changes its AbsoluteSize — both are picked up here.
+	local function islandCentre()
+		local Island = Library.DynamicIsland
+		if Island and Island.Root and Island.Root.Parent then
+			return Island.Root.AbsolutePosition + Island.Root.AbsoluteSize / 2
+		end
+		return ISLAND_CENTRE
+	end
+
+	local contentShown = true
+	local function applyMorph()
+		local Width = Window.WidthMotor:getValue()
+		local Height = Window.HeightMotor:getValue()
+		local WidthProgress = math.clamp((Width - PILL_SIZE.X) / (OPEN_SIZE.X - PILL_SIZE.X), 0, 1)
+		local HeightProgress = math.clamp((Height - PILL_SIZE.Y) / (OPEN_SIZE.Y - PILL_SIZE.Y), 0, 1)
+
+		Window.Root.Size = UDim2.fromOffset(Width, Height)
+		Window.BackgroundCorner.CornerRadius = UDim.new(0,
+			PILL_CORNER + (WINDOW_CORNER - PILL_CORNER) * HeightProgress)
+
+		local OpenCentre = Vector2.new(
+			Window.Position.X.Offset + OPEN_SIZE.X / 2,
+			Window.Position.Y.Offset + OPEN_SIZE.Y / 2
+		)
+		local Centre = islandCentre():Lerp(OpenCentre, WidthProgress)
+		Window.Root.Position = UDim2.fromOffset(Centre.X - Width / 2, Centre.Y - Height / 2)
+
+		-- Content leaves before the shell, so the remaining shape reads as a
+		-- plain dark pill travelling into the island (Apple §12).
+		local Show = WidthProgress > 0.55
+		if Show ~= contentShown then
+			contentShown = Show
+			for _, Object in ipairs(Window.MorphContent or {}) do
+				Object.Visible = Show
+			end
+		end
+
+		Window.Root.GroupTransparency = 1 - math.clamp(WidthProgress * 2.2, 0, 1)
+		Window.Root.Visible = not (Window.Minimized and WidthProgress <= 0.01)
+	end
+
+	Window.WidthMotor:onStep(applyMorph)
+	Window.HeightMotor:onStep(applyMorph)
+
+	-- Once folded, the window is invisible but still tracks the island every
+	-- frame, so a later island move cannot leave it stranded off-target.
+	Creator.AddSignal(RunService.RenderStepped, function()
+		if Window.Minimized then
+			applyMorph()
+		end
+	end)
 
 	Window.TitleBar = require(script.Parent.TitleBar)({
 		Title = Config.Title,
@@ -173,14 +242,12 @@ return function(Config)
 		Window = Window,
 	})
 
-	if require(Root).UseAcrylic then
-		Window.AcrylicPaint.AddParent(Window.Root)
-	end
-
-	local SizeMotor = Flipper.GroupMotor.new({
-		X = Window.Size.X.Offset,
-		Y = Window.Size.Y.Offset,
-	})
+	Window.MorphContent = {
+		Window.TabDisplay,
+		Window.ContainerCanvas,
+		TabFrame,
+		Window.TitleBar.Frame,
+	}
 
 	local PosMotor = Flipper.GroupMotor.new({
 		X = Window.Position.X.Offset,
@@ -192,12 +259,9 @@ return function(Config)
 	Window.ContainerBackMotor = Flipper.SingleMotor.new(0)
 	Window.ContainerPosMotor = Flipper.SingleMotor.new(94)
 
-	SizeMotor:onStep(function(values)
-		Window.Root.Size = UDim2.new(0, values.X, 0, values.Y)
-	end)
-
 	PosMotor:onStep(function(values)
-		Window.Root.Position = UDim2.new(0, values.X, 0, values.Y)
+		Window.Position = UDim2.new(0, values.X, 0, values.Y)
+		applyMorph()
 	end)
 
 	local LastValue = 0
@@ -229,45 +293,11 @@ return function(Config)
 	do
 		local Initial = ClampToViewport(Vector2.new(Window.Position.X.Offset, Window.Position.Y.Offset))
 		Window.Position = UDim2.fromOffset(Initial.X, Initial.Y)
-		Window.Root.Position = Window.Position
+		applyMorph()
 		PosMotor:setGoal({
 			X = Instant(Initial.X),
 			Y = Instant(Initial.Y),
 		})
-	end
-
-	local OldSizeX
-	local OldSizeY
-	Window.Maximize = function(Value, NoPos, Instant)
-		local WasMaximized = Window.Maximized
-		Window.Maximized = Value
-		Window.TitleBar.MaxButton.Frame.Icon.Image = Value and Assets.Restore or Assets.Max
-
-		if Value then
-			if not WasMaximized then
-				OldSizeX = Window.Size.X.Offset
-				OldSizeY = Window.Size.Y.Offset
-			end
-		else
-			OldSizeX = OldSizeX or Window.Size.X.Offset
-			OldSizeY = OldSizeY or Window.Size.Y.Offset
-		end
-
-		local Bounds = GetViewportBounds()
-		local SizeX = Value and Bounds.X or OldSizeX
-		local SizeY = Value and Bounds.Y or OldSizeY
-		SizeMotor:setGoal({
-			X = Flipper[Instant and "Instant" or "Spring"].new(SizeX, { frequency = 6 }),
-			Y = Flipper[Instant and "Instant" or "Spring"].new(SizeY, { frequency = 6 }),
-		})
-		Window.Size = UDim2.fromOffset(SizeX, SizeY)
-
-		if not NoPos then
-			PosMotor:setGoal({
-				X = Spring(Value and 0 or Window.Position.X.Offset, { frequency = 6 }),
-				Y = Spring(Value and 0 or Window.Position.Y.Offset, { frequency = 6 }),
-			})
-		end
 	end
 
 	Creator.AddSignal(Window.TitleBar.Frame.InputBegan, function(Input)
@@ -286,45 +316,7 @@ return function(Config)
 		DragTouch = Input.UserInputType == Enum.UserInputType.Touch and Input or nil
 		DragStartInput = Vector2.new(Input.Position.X, Input.Position.Y)
 
-		if Window.Maximized then
-			local Size = Window.Root.AbsoluteSize
-			local Relative = Vector2.new(
-				(DragStartInput.X - Window.Root.AbsolutePosition.X) / math.max(Size.X, 1),
-				(DragStartInput.Y - Window.Root.AbsolutePosition.Y) / math.max(Size.Y, 1)
-			)
-
-			Window.Maximize(false, true, true)
-			DragStartPos = ClampToViewport(Vector2.new(
-				DragStartInput.X - OldSizeX * Relative.X,
-				DragStartInput.Y - OldSizeY * Relative.Y
-			), Vector2.new(OldSizeX, OldSizeY))
-
-			Window.Position = UDim2.fromOffset(DragStartPos.X, DragStartPos.Y)
-			PosMotor:setGoal({
-				X = Instant(DragStartPos.X),
-				Y = Instant(DragStartPos.Y),
-			})
-		else
-			DragStartPos = Vector2.new(Window.Root.AbsolutePosition.X, Window.Root.AbsolutePosition.Y)
-		end
-	end)
-
-	Creator.AddSignal(ResizeStartFrame.InputBegan, function(Input)
-		if
-			Input.UserInputType ~= Enum.UserInputType.MouseButton1
-			and Input.UserInputType ~= Enum.UserInputType.Touch
-		then
-			return
-		end
-
-		if Library:IsInputLocked() then
-			return
-		end
-
-		Resizing = true
-		ResizeTouch = Input.UserInputType == Enum.UserInputType.Touch and Input or nil
-		ResizeStartInput = Vector2.new(Input.Position.X, Input.Position.Y)
-		ResizeStartSize = Window.Root.AbsoluteSize
+		DragStartPos = Vector2.new(Window.Position.X.Offset, Window.Position.Y.Offset)
 	end)
 
 	Creator.AddSignal(UserInputService.InputChanged, function(Input)
@@ -343,31 +335,6 @@ return function(Config)
 				})
 			end
 		end
-
-		if Resizing then
-			local IsResizeInput = Input.UserInputType == Enum.UserInputType.MouseMovement
-				or (Input.UserInputType == Enum.UserInputType.Touch and Input == ResizeTouch)
-
-			if IsResizeInput then
-				local Current = Vector2.new(Input.Position.X, Input.Position.Y)
-				local Delta = Current - ResizeStartInput
-				local Bounds = GetViewportBounds()
-				local Position = Vector2.new(Window.Root.AbsolutePosition.X, Window.Root.AbsolutePosition.Y)
-				local MaxX = math.max(470, Bounds.X - Position.X)
-				local MaxY = math.max(380, Bounds.Y - Position.Y)
-
-				local TargetSize = Vector2.new(
-					math.clamp(ResizeStartSize.X + Delta.X, 470, MaxX),
-					math.clamp(ResizeStartSize.Y + Delta.Y, 380, MaxY)
-				)
-
-				Window.Size = UDim2.fromOffset(TargetSize.X, TargetSize.Y)
-				SizeMotor:setGoal({
-					X = Instant(TargetSize.X),
-					Y = Instant(TargetSize.Y),
-				})
-			end
-		end
 	end)
 
 	Creator.AddSignal(UserInputService.InputEnded, function(Input)
@@ -376,11 +343,6 @@ return function(Config)
 			DragTouch = nil
 		end
 
-		if Resizing and (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input == ResizeTouch) then
-			Resizing = false
-			ResizeTouch = nil
-			Window.Size = UDim2.fromOffset(SizeMotor:getValue().X, SizeMotor:getValue().Y)
-		end
 	end)
 
 	Creator.AddSignal(Window.TabHolder.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
@@ -405,10 +367,35 @@ return function(Config)
 		end
 	end)
 
-	function Window:Minimize()
+	function Window:Minimize(Silent, Animated)
 		Window.Minimized = not Window.Minimized
-		Window.Root.Visible = not Window.Minimized
-		if not MinimizeNotif then
+		local Closing = Window.Minimized
+		local GoalWidth = Closing and PILL_SIZE.X or OPEN_SIZE.X
+		local GoalHeight = Closing and PILL_SIZE.Y or OPEN_SIZE.Y
+
+		if Animated then
+			-- Width travels further than height, so they get their own
+			-- critically damped springs (Apple §3). Height settles sooner,
+			-- which makes the shell turn into a capsule before it arrives.
+			Window.WidthMotor:setGoal(Spring(GoalWidth, {
+				frequency = Closing and 2.5 or 2.2,
+				dampingRatio = 1,
+			}))
+			Window.HeightMotor:setGoal(Spring(GoalHeight, {
+				frequency = Closing and 3.0 or 2.6,
+				dampingRatio = 1,
+			}))
+		else
+			-- Keyboard toggles stay instant: no input-path animation.
+			Window.Root.Visible = not Closing
+			Window.WidthMotor:setGoal(Instant(GoalWidth))
+			Window.HeightMotor:setGoal(Instant(GoalHeight))
+		end
+
+		if Window.OnMinimizeChanged then
+			Window.OnMinimizeChanged(Window.Minimized)
+		end
+		if not Silent and not MinimizeNotif then
 			MinimizeNotif = true
 			local Key = Library.MinimizeKeybind and Library.MinimizeKeybind.Value or Library.MinimizeKey.Name
 			Library:Notify({
@@ -420,8 +407,9 @@ return function(Config)
 	end
 
 	function Window:Destroy()
-		SizeMotor:stop()
 		PosMotor:stop()
+		Window.WidthMotor:stop()
+		Window.HeightMotor:stop()
 		Window.SelectorPosMotor:stop()
 		Window.SelectorSizeMotor:stop()
 		Window.ContainerBackMotor:stop()
@@ -430,10 +418,6 @@ return function(Config)
 		if Library.Window == Window and not Library.Unloaded then
 			Library:Destroy()
 			return
-		end
-
-		if Window.AcrylicPaint.Model then
-			Window.AcrylicPaint.Model:Destroy()
 		end
 
 		Window.Root:Destroy()

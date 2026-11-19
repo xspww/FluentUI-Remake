@@ -10,7 +10,7 @@ function Paragraph:New(Config)
 	Config.Content = Config.Content or ""
 
 	local Element = require(Components.Element)(Config.Title, Config.Content, self.Container, false)
-	Element.Frame.BackgroundTransparency = 0.92
+	Element.Frame.BackgroundTransparency = 0
 	Element.Border.Transparency = 0.6
 
 	return Element
