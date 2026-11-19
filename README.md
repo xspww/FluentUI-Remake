@@ -3,13 +3,17 @@
 
 # Fluent Remake
 
-A remake of [dawid-scripts/Fluent](https://github.com/dawid-scripts/Fluent). It keeps the same design and the same API. It fixes the faults of the original and adds touch support.
+A remake of [dawid-scripts/Fluent](https://github.com/dawid-scripts/Fluent). It keeps the element API of the original and adds touch support, grouped navigation and a Dynamic Island toggle.
 
 ## Features
 
-The library gives you a window, tabs, sections and the usual elements. It runs in Roblox Studio and in executors. The API is the same as the original.
+The library gives you a window, tabs, sections and the usual elements. It runs in Roblox Studio and in executors.
 
 - Works with a mouse and with touch
+- Fixed 635x541 window — resizing and maximizing were removed
+- Solid, opaque themes — the acrylic blur and transparency switches were removed
+- A Dynamic Island pill toggles the interface; the window morphs into it and back
+- Sidebar navigation groups when you have many tabs
 - Seven themes, including a navy blue one
 - Does not need `syn`
 
@@ -36,7 +40,6 @@ A window holds tabs. A tab holds sections. A section holds the elements.
 local Window = Fluent:CreateWindow({
     Title = "Fluent",
     SubTitle = "Remake",
-    Size = UDim2.fromOffset(580, 460),
     Theme = "Dark",
 })
 
@@ -63,11 +66,32 @@ The name before the settings table is the key. The save manager uses the key to 
 
 The full example is in [Example.client.lua](Example.client.lua).
 
+## Navigation groups
+
+Pass `Group` to `AddTab` to place a tab under a section header. The header only opens its group; it never changes the page. Only one group is open at a time. Opening another group selects its first child, and selecting a flat tab closes the group.
+
+```lua
+Window:AddTab({ Title = "Main", Icon = "box" })
+Window:AddTab({ Title = "Child one", Icon = "box", Group = "Section A", GroupIcon = "layers" })
+Window:AddTab({ Title = "Child two", Icon = "box", Group = "Section A" })
+
+Window:SetGroupOpen("Section A", true, true) -- name, open, animated
+Window:ToggleGroup("Section A")              -- opens the group
+```
+
+Child rows are indented, have no chevron or badge and do not react to hover. The selected row is marked by the existing selector bar.
+
+## Dynamic Island
+
+A small pill sits at the top centre of the screen. Tapping it toggles the interface: the window shrinks into the pill on close, and the pill expands back into the window on open. The folded window tracks the pill's live position. Set `DynamicIsland = false` in `CreateWindow` to disable it; the instance is available as `Fluent.DynamicIsland`.
+
+An interactive HTML mock of the sidebar is in [preview/sidebar-groups.html](preview/sidebar-groups.html). The design notes are in [plans/](plans/).
+
 ## API
 
 Call these functions on the library.
 
-- `CreateWindow(Config)` creates the window. The library holds one window.
+- `CreateWindow(Config)` creates the window. The library holds one window. `Config` takes `Title`, `SubTitle`, `Theme`, `MinimizeKey` and `DynamicIsland`. The window size is fixed at 635x541.
 - `SetTheme(Name)` changes the theme. The names are in `Main.Themes`. An unknown name is ignored.
 - `Notify(Config)` shows a notification.
 - `GetIcon(Name)` returns the url of a Lucide icon.
@@ -75,10 +99,12 @@ Call these functions on the library.
 
 Call these functions on a window.
 
-- `AddTab(Config)` adds a tab with a `Title` and an `Icon`.
+- `AddTab(Config)` adds a tab. `Config` takes `Title`, `Icon` and, for grouped tabs, `Group` and `GroupIcon`.
 - `SelectTab(Index)` shows a tab.
+- `SetGroupOpen(Name, Open, Animated)` opens or closes a navigation group.
+- `ToggleGroup(Name)` opens a navigation group.
 - `Dialog(Config)` opens a dialog.
-- `Minimize()` hides the window.
+- `Minimize()` hides the window. The island toggle is animated; the keybind is instant.
 
 Call these functions on a tab or on a section to add an element. Most elements take a name and a settings table.
 
@@ -115,7 +141,7 @@ InterfaceManager:BuildFolderTree()
 InterfaceManager:BuildInterfaceSection(Tab)
 ```
 
-The save manager keeps every saved file under one folder. The interface manager keeps the theme, the acrylic switch and the minimize key.
+The save manager keeps every saved file under one folder. The interface manager keeps the theme and the minimize key.
 
 ## Build
 
