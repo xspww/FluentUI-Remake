@@ -175,7 +175,7 @@ return function(Config)
 	-- springs (Apple §3), the corner radius follows height so the rectangle
 	-- turns into a capsule, and the centre travels to the island (§7).
 	local ISLAND_CENTRE = Vector2.new(Viewport.X / 2, 10 + 34 / 2)
-	local PILL_SIZE = Vector2.new(52, 34)
+	local PILL_SIZE = Vector2.new(104, 34) -- must match DynamicIsland.lua
 	local OPEN_SIZE = Vector2.new(Window.Size.X.Offset, Window.Size.Y.Offset)
 	local WINDOW_CORNER, PILL_CORNER = 8, 17
 

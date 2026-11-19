@@ -4,13 +4,30 @@ local Window = Main:CreateWindow({
     Title = "Fluent " .. Main.Version,
     SubTitle = "by dawid",
     TabWidth = 160,
-    Size = UDim2.fromOffset(635, 541),
+    -- The window size is fixed at 635x541 and can no longer be resized.
     Theme = "Dark"
+    -- DynamicIsland = false, -- disable the top-centre toggle pill
 })
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "box" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
+
+    -- Grouped tabs live under a section header. The header only opens the
+    -- group; it never changes the page. Only one group can be open at a time.
+    Recent = Window:AddTab({
+        Title = "Recent",
+        Icon = "clock",
+        Group = "Library",
+        GroupIcon = "layers"
+    }),
+    Favorites = Window:AddTab({ Title = "Favorites", Icon = "star", Group = "Library" }),
+    Profile = Window:AddTab({
+        Title = "Profile",
+        Icon = "user",
+        Group = "Account",
+        GroupIcon = "user"
+    }),
 }
 
 do
@@ -175,7 +192,42 @@ do
     })
 
     InterfaceSection:AddKeybind("MenuKeybind", { Title = "Minimize Bind", Default = "RightShift" })
-    Main.MinimizeKeybind = Main.Options.MenuKeybind 
+    Main.MinimizeKeybind = Main.Options.MenuKeybind
+
+    InterfaceSection:AddButton({
+        Title = "Open Library group",
+        Description = "Opening a group selects its first child.",
+        Callback = function()
+            Window:ToggleGroup("Library")
+        end
+    })
+
+    InterfaceSection:AddButton({
+        Title = "Open Account group",
+        Callback = function()
+            Window:SetGroupOpen("Account", true, true)
+        end
+    })
+end
+
+do
+    local RecentSection = Tabs.Recent:AddSection("Library")
+    RecentSection:AddParagraph({
+        Title = "Recent",
+        Content = "This tab lives under the Library group header."
+    })
+    RecentSection:AddButton({
+        Title = "Go to Favorites",
+        Callback = function()
+            Window:SelectTab(Tabs.Favorites.Index)
+        end
+    })
+
+    local ProfileSection = Tabs.Profile:AddSection("Account")
+    ProfileSection:AddParagraph({
+        Title = "Profile",
+        Content = "Opening Account closes Library and selects this tab."
+    })
 end
 
 Main:Notify({

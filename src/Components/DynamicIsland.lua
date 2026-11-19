@@ -10,7 +10,9 @@ local Flipper = require(Root.Packages.Flipper)
 local New = Creator.New
 local Spring = Flipper.Spring.new
 
-local PILL_WIDTH = 52
+-- Apple's island is a wide, low capsule (~3:1). Keep the height and grow the
+-- width so the pill reads as a material strip rather than a small badge.
+local PILL_WIDTH = 104
 local PILL_HEIGHT = 34
 local PRESS_FREQUENCY = 14
 local RELEASE_FREQUENCY = 8
