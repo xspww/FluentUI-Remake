@@ -4,30 +4,226 @@ local Creator = require(Root.Creator)
 
 local New = Creator.New
 local Spring = Flipper.Spring.new
+local Instant = Flipper.Instant.new
 local Components = Root.Components
+
+local FONT_REGULAR = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+local FONT_SEMIBOLD = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal)
+
+local TAB_HEIGHT = 34
+local CHILD_HEIGHT = 30
+local PADDING = 4
+local CHILD_INDENT = 22
 
 local TabModule = {
 	Window = nil,
 	Tabs = {},
 	Containers = {},
+	Groups = {},
+	GroupOrder = {},
+	FlatTabs = {},
+	OpenGroupName = nil,
 	SelectedTab = 0,
 	SwitchToken = 0,
 	TabCount = 0,
 }
+
+local function refreshSelector()
+	local Window = TabModule.Window
+	if not Window or not Window.SelectorPosMotor then
+		return
+	end
+	if not TabModule.Tabs[TabModule.SelectedTab] then
+		return
+	end
+	Window.SelectorPosMotor:setGoal(Spring(TabModule:GetCurrentTabPos(), { frequency = 6 }))
+end
 
 function TabModule:Init(Window)
 	TabModule.Window = Window
 	return TabModule
 end
 
+function TabModule:Destroy()
+	for _, Group in next, TabModule.Groups do
+		if Group.ExpandMotor then
+			Group.ExpandMotor:stop()
+		end
+	end
+end
+
 function TabModule:GetCurrentTabPos()
 	local TabHolderPos = TabModule.Window.TabHolder.AbsolutePosition.Y
 	local TabPos = TabModule.Tabs[TabModule.SelectedTab].Frame.AbsolutePosition.Y
-
 	return TabPos - TabHolderPos
 end
 
-function TabModule:New(Title, Icon, Parent)
+local function styleTab(Tab, Selected)
+	Tab.Label.FontFace = Selected and FONT_SEMIBOLD or FONT_REGULAR
+	Creator.OverrideTag(Tab.Label, { TextColor3 = Selected and "Text" or "SubText" })
+	Creator.OverrideTag(Tab.IconLabel, { ImageColor3 = Selected and "Text" or "SubText" })
+end
+
+local function layoutNav()
+	local Order = 0
+	for _, Tab in ipairs(TabModule.FlatTabs) do
+		Tab.Frame.LayoutOrder = Order
+		Order = Order + 1
+	end
+	for _, Name in ipairs(TabModule.GroupOrder) do
+		local Group = TabModule.Groups[Name]
+		Group.Header.LayoutOrder = Order
+		Order = Order + 1
+		Group.Clips.LayoutOrder = Order
+		Order = Order + 1
+	end
+end
+
+local function setGroupGoal(Group, Value, Animated)
+	Group.ExpandMotor:setGoal(Animated
+		and Spring(Value, { frequency = 5, dampingRatio = 1 })
+		or Instant(Value))
+end
+
+local function getGroup(Name, Icon)
+	if not Name then
+		return nil
+	end
+
+	local Group = TabModule.Groups[Name]
+	if Group then
+		return Group
+	end
+
+	local Library = require(Root)
+	if Icon and Icon ~= "" then
+		Icon = Library:GetIcon(Icon) or Icon
+	end
+
+	Group = {
+		Name = Name,
+		Tabs = {},
+		Open = false,
+		ContentHeight = 0,
+	}
+
+	Group.Header = New("TextButton", {
+		Size = UDim2.new(1, 0, 0, TAB_HEIGHT),
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Text = "",
+		Parent = TabModule.Window.TabHolder,
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("ImageLabel", {
+			Name = "Icon",
+			AnchorPoint = Vector2.new(0, 0.5),
+			Size = UDim2.fromOffset(16, 16),
+			Position = UDim2.new(0, 8, 0.5, 0),
+			BackgroundTransparency = 1,
+			Image = Icon,
+			ThemeTag = { ImageColor3 = "SubText" },
+		}),
+		New("TextLabel", {
+			Name = "Label",
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 30, 0.5, 0),
+			Text = Name,
+			FontFace = FONT_SEMIBOLD,
+			TextSize = 12,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Size = UDim2.new(1, -36, 1, 0),
+			BackgroundTransparency = 1,
+			ThemeTag = { TextColor3 = "SubText" },
+		}),
+	})
+
+	-- The clipping frame owns the height; the CanvasGroup inside it owns alpha.
+	Group.Clips = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		BackgroundTransparency = 1,
+		ClipsDescendants = true,
+		Parent = TabModule.Window.TabHolder,
+	})
+
+	Group.Sublist = New("CanvasGroup", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		GroupTransparency = 1,
+		Parent = Group.Clips,
+	}, {
+		New("UIListLayout", { Padding = UDim.new(0, PADDING) }),
+		New("UIPadding", { PaddingLeft = UDim.new(0, CHILD_INDENT) }),
+	})
+
+	Creator.AddSignal(Group.Header.MouseButton1Click, function()
+		TabModule:OpenGroup(Name, true)
+	end)
+
+	Group.ExpandMotor = Flipper.SingleMotor.new(0)
+	Group.ExpandMotor:onStep(function(Value)
+		Group.Clips.Size = UDim2.new(1, 0, 0, Group.ContentHeight * Value)
+		Group.Sublist.GroupTransparency = 1 - math.clamp(Value * 1.6, 0, 1)
+		local Dim = Creator.GetThemeProperty("SubText")
+		local Bright = Creator.GetThemeProperty("Accent")
+		Group.Header.Icon.ImageColor3 = Dim:Lerp(Bright, Value)
+		Group.Header.Label.TextColor3 = Creator.GetThemeProperty("SubText"):Lerp(
+			Creator.GetThemeProperty("Text"), Value)
+		-- Rows shift while a group folds, so the selector must retarget too.
+		refreshSelector()
+	end)
+
+	TabModule.Groups[Name] = Group
+	TabModule.GroupOrder[#TabModule.GroupOrder + 1] = Name
+	return Group
+end
+
+function TabModule:OpenGroup(Name, Animated)
+	local Group = TabModule.Groups[Name]
+	if not Group then
+		return
+	end
+
+	if TabModule.OpenGroupName and TabModule.OpenGroupName ~= Name then
+		local Previous = TabModule.Groups[TabModule.OpenGroupName]
+		if Previous then
+			Previous.Open = false
+			setGroupGoal(Previous, 0, Animated)
+		end
+	end
+
+	local WasOpen = Group.Open
+	Group.Open = true
+	TabModule.OpenGroupName = Name
+	setGroupGoal(Group, 1, Animated)
+
+	if not WasOpen and Group.Tabs[1] then
+		-- Opening a group moves the selection to its first child.
+		self:SelectTab(Group.Tabs[1].Index)
+	end
+end
+
+function TabModule:CloseGroups(Animated)
+	if not TabModule.OpenGroupName then
+		return
+	end
+	local Group = TabModule.Groups[TabModule.OpenGroupName]
+	if Group then
+		Group.Open = false
+		setGroupGoal(Group, 0, Animated)
+	end
+	TabModule.OpenGroupName = nil
+end
+
+function TabModule:SetGroupOpen(Name, Open, Animated)
+	if Open then
+		self:OpenGroup(Name, Animated)
+	elseif TabModule.OpenGroupName == Name then
+		self:CloseGroups(Animated)
+	end
+end
+
+function TabModule:New(Title, Icon, Parent, GroupName, GroupIcon)
 	local Library = require(Root)
 	local Window = TabModule.Window
 	local Elements = Library.Elements
@@ -35,62 +231,60 @@ function TabModule:New(Title, Icon, Parent)
 	TabModule.TabCount = TabModule.TabCount + 1
 	local TabIndex = TabModule.TabCount
 
-	local Tab = {
-		Selected = false,
-		Name = Title,
-		Type = "Tab",
-	}
-
 	if Library:GetIcon(Icon) then
 		Icon = Library:GetIcon(Icon)
 	end
-
 	if Icon == "" or nil then
 		Icon = nil
 	end
 
-	Tab.Frame = New("TextButton", {
-		Size = UDim2.new(1, 0, 0, 34),
+	local Group = getGroup(GroupName, GroupIcon)
+	local TabParent = Group and Group.Sublist or Parent
+	local Height = Group and CHILD_HEIGHT or TAB_HEIGHT
+	local WidthIndent = Group and CHILD_INDENT or 0
+
+	local Tab = {
+		Selected = false,
+		Name = Title,
+		Type = "Tab",
+		Index = TabIndex,
+		Group = GroupName,
+	}
+
+	Tab.Label = New("TextLabel", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = Icon and UDim2.new(0, 30, 0.5, 0) or UDim2.new(0, 12, 0.5, 0),
+		Text = Title,
+		RichText = true,
+		TextColor3 = Color3.fromRGB(140, 152, 172),
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Size = UDim2.new(1, -36, 1, 0),
 		BackgroundTransparency = 1,
-		Parent = Parent,
-		ThemeTag = {
-			BackgroundColor3 = "Tab",
-		},
+		ThemeTag = { TextColor3 = "SubText" },
+	})
+
+	Tab.IconLabel = New("ImageLabel", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Size = UDim2.fromOffset(Group and 14 or 16, Group and 14 or 16),
+		Position = UDim2.new(0, 8, 0.5, 0),
+		BackgroundTransparency = 1,
+		Image = Icon,
+		ThemeTag = { ImageColor3 = "SubText" },
+	})
+
+	Tab.Frame = New("TextButton", {
+		Size = UDim2.new(1, -WidthIndent, 0, Height),
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Text = "",
+		Parent = TabParent,
+		ThemeTag = { BackgroundColor3 = "Tab" },
 	}, {
-		New("UICorner", {
-			CornerRadius = UDim.new(0, 6),
-		}),
-		New("TextLabel", {
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = Icon and UDim2.new(0, 30, 0.5, 0) or UDim2.new(0, 12, 0.5, 0),
-			Text = Title,
-			RichText = true,
-			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextTransparency = 0,
-			FontFace = Font.new(
-				"rbxasset://fonts/families/GothamSSm.json",
-				Enum.FontWeight.Regular,
-				Enum.FontStyle.Normal
-			),
-			TextSize = 12,
-			TextXAlignment = "Left",
-			TextYAlignment = "Center",
-			Size = UDim2.new(1, -12, 1, 0),
-			BackgroundTransparency = 1,
-			ThemeTag = {
-				TextColor3 = "Text",
-			},
-		}),
-		New("ImageLabel", {
-			AnchorPoint = Vector2.new(0, 0.5),
-			Size = UDim2.fromOffset(16, 16),
-			Position = UDim2.new(0, 8, 0.5, 0),
-			BackgroundTransparency = 1,
-			Image = Icon and Icon or nil,
-			ThemeTag = {
-				ImageColor3 = "Text",
-			},
-		}),
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		Tab.IconLabel,
+		Tab.Label,
 	})
 
 	local ContainerLayout = New("UIListLayout", {
@@ -133,46 +327,71 @@ function TabModule:New(Title, Icon, Parent)
 	TabModule.Containers[TabIndex] = Tab.ContainerFrame
 	TabModule.Tabs[TabIndex] = Tab
 
+	if Group then
+		Group.Tabs[#Group.Tabs + 1] = Tab
+		Group.ContentHeight = #Group.Tabs * CHILD_HEIGHT
+			+ math.max(0, #Group.Tabs - 1) * PADDING + 8
+	else
+		TabModule.FlatTabs[#TabModule.FlatTabs + 1] = Tab
+	end
+
+	layoutNav()
+
 	Tab.Container = Tab.ContainerFrame
 	Tab.ScrollFrame = Tab.Container
 
 	function Tab:AddSection(SectionTitle)
 		local Section = { Type = "Section" }
-
 		local SectionFrame = require(Components.Section)(SectionTitle, Tab.Container)
 		Section.Container = SectionFrame.Container
 		Section.ScrollFrame = Tab.Container
-
 		setmetatable(Section, Elements)
 		return Section
 	end
 
+	styleTab(Tab, false)
 	setmetatable(Tab, Elements)
 	return Tab
 end
 
 function TabModule:SelectTab(Tab)
-	local Window = TabModule.Window
-
 	local Target = TabModule.Tabs[Tab]
 	if not Target then
 		return
 	end
 
+	if Target.Group then
+		self:OpenGroup(Target.Group, true)
+	else
+		self:CloseGroups(true)
+	end
+
 	TabModule.SelectedTab = Tab
 
 	for _, TabObject in next, TabModule.Tabs do
-		TabObject.Selected = false
+		if TabObject.Selected then
+			TabObject.Selected = false
+			styleTab(TabObject, false)
+		end
 	end
 	Target.Selected = true
+	styleTab(Target, true)
 
+	local Window = TabModule.Window
 	Window.TabDisplay.Text = Target.Name
-	Window.SelectorPosMotor:setGoal(Spring(TabModule:GetCurrentTabPos(), { frequency = 6 }))
+	refreshSelector()
 
 	-- A new selection invalidates the in-flight switch so two threads never
 	-- write the container motors or visibility at the same time.
 	TabModule.SwitchToken = TabModule.SwitchToken + 1
 	local Token = TabModule.SwitchToken
+
+	-- UIListLayout settles a frame after the fold finishes; align once more.
+	task.delay(0.3, function()
+		if Token == TabModule.SwitchToken then
+			refreshSelector()
+		end
+	end)
 
 	Window.ContainerHolder.Parent = Window.ContainerAnim
 	Window.ContainerPosMotor:setGoal(Spring(15, { frequency = 10 }))

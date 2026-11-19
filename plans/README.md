@@ -1,6 +1,6 @@
 # Animation improvement plans
 
-Stamp commit: `4608e95`
+Stamp commit: `bb621a4`
 
 | # | Title | Severity | Status |
 | --- | --- | --- | --- |
@@ -10,6 +10,7 @@ Stamp commit: `4608e95`
 | 004 | Redesign the island transition with Apple-style motion principles | HIGH | DONE |
 | 005 | Morph the main window into the Dynamic Island pill | HIGH | DONE |
 | 006 | Track the Dynamic Island's live position while folded | MEDIUM | DONE |
+| 007 | Sidebar navigation groups | MEDIUM | DONE |
 
 ## Recommended execution order
 

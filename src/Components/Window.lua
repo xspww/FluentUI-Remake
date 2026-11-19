@@ -108,6 +108,7 @@ return function(Config)
 	}, {
 		New("UIListLayout", {
 			Padding = UDim.new(0, 4),
+			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	})
 
@@ -406,8 +407,11 @@ return function(Config)
 		end
 	end
 
+	local TabModule = require(Components.Tab):Init(Window)
+
 	function Window:Destroy()
 		PosMotor:stop()
+		TabModule:Destroy()
 		Window.WidthMotor:stop()
 		Window.HeightMotor:stop()
 		Window.SelectorPosMotor:stop()
@@ -467,9 +471,24 @@ return function(Config)
 		Dialog:Open()
 	end
 
-	local TabModule = require(Components.Tab):Init(Window)
 	function Window:AddTab(TabConfig)
-		return TabModule:New(TabConfig.Title, TabConfig.Icon, Window.TabHolder)
+		return TabModule:New(
+			TabConfig.Title,
+			TabConfig.Icon,
+			Window.TabHolder,
+			TabConfig.Group,
+			TabConfig.GroupIcon
+		)
+	end
+
+	function Window:SetGroupOpen(Name, Open, Animated)
+		TabModule:SetGroupOpen(Name, Open, Animated)
+	end
+
+	function Window:ToggleGroup(Name)
+		-- Headers only ever open a group; a group closes when another opens
+		-- or when a flat tab is selected.
+		TabModule:OpenGroup(Name, true)
 	end
 
 	function Window:SelectTab(Tab)
