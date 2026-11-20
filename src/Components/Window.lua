@@ -96,6 +96,7 @@ return function(Config)
 			CornerRadius = UDim.new(0, 2),
 		}),
 	})
+	Window.Selector = Selector
 
 	Window.TabHolder = New("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 1),
@@ -489,6 +490,10 @@ return function(Config)
 		-- Headers only ever open a group; a group closes when another opens
 		-- or when a flat tab is selected.
 		TabModule:OpenGroup(Name, true)
+	end
+
+	function Window:SetNavQuery(Query)
+		TabModule:SetNavQuery(Query)
 	end
 
 	function Window:SelectTab(Tab)

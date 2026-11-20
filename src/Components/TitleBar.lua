@@ -1,5 +1,4 @@
 local Root = script.Parent.Parent
-local Assets = require(script.Parent.Assets)
 local Creator = require(Root.Creator)
 
 local New = Creator.New
@@ -10,71 +9,11 @@ return function(Config)
 
 	local Library = require(Root)
 
-	local function BarButton(Icon, Pos, Parent, Callback)
-		local Button = {
-			Callback = Callback or function() end,
-		}
-
-		Button.Frame = New("TextButton", {
-			Size = UDim2.new(0, 34, 1, -8),
-			AnchorPoint = Vector2.new(1, 0),
-			BackgroundTransparency = 1,
-			Parent = Parent,
-			Position = Pos,
-			Text = "",
-			ThemeTag = {
-				BackgroundColor3 = "Text",
-			},
-		}, {
-			New("UICorner", {
-				CornerRadius = UDim.new(0, 7),
-			}),
-			New("ImageLabel", {
-				Image = Icon,
-				Size = UDim2.fromOffset(16, 16),
-				Position = UDim2.fromScale(0.5, 0.5),
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				BackgroundTransparency = 1,
-				Name = "Icon",
-				ThemeTag = {
-					ImageColor3 = "Text",
-				},
-			}),
-		})
-
-		local _, SetTransparency = Creator.SpringMotor(1, Button.Frame, "BackgroundTransparency")
-
-		AddSignal(Button.Frame.MouseEnter, function()
-			SetTransparency(0.94)
-		end)
-		AddSignal(Button.Frame.MouseLeave, function()
-			SetTransparency(1, true)
-		end)
-		AddSignal(Button.Frame.MouseButton1Down, function()
-			SetTransparency(0.96)
-		end)
-		AddSignal(Button.Frame.MouseButton1Up, function()
-			SetTransparency(0.94)
-		end)
-		AddSignal(Button.Frame.MouseButton1Click, Button.Callback)
-
-		Button.SetCallback = function(Func)
-			Button.Callback = Func
-		end
-
-		return Button
-	end
-
-	TitleBar.Frame = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 42),
+	TitleBar.Brand = New("Frame", {
+		Size = UDim2.new(1, -16, 1, 0),
+		Position = UDim2.new(0, 16, 0, 0),
 		BackgroundTransparency = 1,
-		Parent = Config.Parent,
 	}, {
-		New("Frame", {
-			Size = UDim2.new(1, -16, 1, 0),
-			Position = UDim2.new(0, 16, 0, 0),
-			BackgroundTransparency = 1,
-		}, {
 			New("UIListLayout", {
 				Padding = UDim.new(0, 5),
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -117,7 +56,14 @@ return function(Config)
 					TextColor3 = "Text",
 				},
 			}),
-		}),
+	})
+
+	TitleBar.Frame = New("Frame", {
+		Size = UDim2.new(1, 0, 0, 42),
+		BackgroundTransparency = 1,
+		Parent = Config.Parent,
+	}, {
+		TitleBar.Brand,
 		New("Frame", {
 			BackgroundTransparency = 0.5,
 			Size = UDim2.new(1, 0, 0, 1),
@@ -128,25 +74,60 @@ return function(Config)
 		}),
 	})
 
-	TitleBar.CloseButton = BarButton(Assets.Close, UDim2.new(1, -4, 0, 4), TitleBar.Frame, function()
-		Library.Window:Dialog({
-			Title = "Close",
-			Content = "Are you sure you want to unload the interface?",
-			Buttons = {
-				{
-					Title = "Yes",
-					Callback = function()
-						Library:Destroy()
-					end,
-				},
-				{
-					Title = "No",
-				},
-			},
-		})
+	-- The search field replaces the old minimise/close buttons entirely: it
+	-- sits at the right edge of the title bar and is always available.
+	local SearchIcon = Library:GetIcon("search")
+
+	TitleBar.SearchField = New("Frame", {
+		Size = UDim2.new(0, 120, 0, 24),
+		Position = UDim2.new(1, -4, 0.5, 0),
+		AnchorPoint = Vector2.new(1, 0.5),
+		BackgroundTransparency = 0.6,
+		Parent = TitleBar.Frame,
+		ThemeTag = { BackgroundColor3 = "Element" },
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
+		New("UIStroke", {
+			Transparency = 0.5,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			ThemeTag = { Color = "InElementBorder" },
+		}),
+		New("ImageLabel", {
+			Size = UDim2.fromOffset(13, 13),
+			Position = UDim2.new(0, 9, 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			BackgroundTransparency = 1,
+			Image = SearchIcon,
+			ThemeTag = { ImageColor3 = "SubText" },
+		}),
+	})
+
+	TitleBar.SearchBox = New("TextBox", {
+		Size = UDim2.new(1, -34, 1, 0),
+		Position = UDim2.fromOffset(28, 0),
+		BackgroundTransparency = 1,
+		Text = "",
+		PlaceholderText = "search...",
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ClearTextOnFocus = false,
+		Parent = TitleBar.SearchField,
+		ThemeTag = {
+			TextColor3 = "Text",
+			PlaceholderColor3 = "SubText",
+		},
+	})
+
+	AddSignal(TitleBar.SearchBox:GetPropertyChangedSignal("Text"), function()
+		if Config.Window and Config.Window.SetNavQuery then
+			Config.Window:SetNavQuery(TitleBar.SearchBox.Text)
+		end
 	end)
-	TitleBar.MinButton = BarButton(Assets.Min, UDim2.new(1, -40, 0, 4), TitleBar.Frame, function()
-		Library.Window:Minimize()
+
+	AddSignal(TitleBar.SearchBox.InputEnded, function(Input)
+		if Input.KeyCode == Enum.KeyCode.Escape then
+			TitleBar.SearchBox.Text = ""
+		end
 	end)
 
 	return TitleBar

@@ -41,6 +41,20 @@ end
 
 function TabModule:Init(Window)
 	TabModule.Window = Window
+
+	TabModule.NoResults = New("TextLabel", {
+		Size = UDim2.new(1, -20, 0, 26),
+		Position = UDim2.fromOffset(10, 4),
+		BackgroundTransparency = 1,
+		Text = "No results",
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Visible = false,
+		LayoutOrder = -1,
+		Parent = Window.TabHolder,
+		ThemeTag = { TextColor3 = "SubText" },
+	})
+
 	return TabModule
 end
 
@@ -213,6 +227,49 @@ function TabModule:CloseGroups(Animated)
 		setGroupGoal(Group, 0, Animated)
 	end
 	TabModule.OpenGroupName = nil
+end
+
+function TabModule:SetNavQuery(Query)
+	local Lower = string.lower(Query or "")
+	local Visible = 0
+
+	for _, Tab in ipairs(TabModule.FlatTabs) do
+		Tab.Frame.Visible = Lower == ""
+			or string.find(string.lower(Tab.Name), Lower, 1, true) ~= nil
+		if Tab.Frame.Visible then
+			Visible = Visible + 1
+		end
+	end
+
+	for Name, Group in pairs(TabModule.Groups) do
+		local HeaderMatch = Lower ~= ""
+			and string.find(string.lower(Name), Lower, 1, true) ~= nil
+		for _, Tab in ipairs(Group.Tabs) do
+			local Match = Lower == ""
+				or HeaderMatch
+				or string.find(string.lower(Tab.Name), Lower, 1, true) ~= nil
+			Tab.Frame.Visible = Match
+			if Match then
+				Visible = Visible + 1
+			end
+		end
+		local Show = Lower == "" or HeaderMatch
+		if not Show then
+			for _, Tab in ipairs(Group.Tabs) do
+				if Tab.Frame.Visible then
+					Show = true
+					break
+				end
+			end
+		end
+		Group.Header.Visible = Show
+		Group.Clips.Visible = Show
+	end
+
+	TabModule.NoResults.Visible = Visible == 0
+	if TabModule.Window.Selector then
+		TabModule.Window.Selector.Visible = Visible > 0
+	end
 end
 
 function TabModule:SetGroupOpen(Name, Open, Animated)

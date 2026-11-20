@@ -123,8 +123,8 @@ function Element:New(Idx, Config)
 	})
 
 	local DropdownScrollFrame = New("ScrollingFrame", {
-		Size = UDim2.new(1, -5, 1, -10),
-		Position = UDim2.fromOffset(5, 5),
+		Size = UDim2.new(1, -5, 1, -44),
+		Position = UDim2.fromOffset(5, 40),
 		BackgroundTransparency = 1,
 		BottomImage = "rbxassetid://6889812791",
 		MidImage = "rbxassetid://6889812721",
@@ -164,6 +164,59 @@ function Element:New(Idx, Config)
 			ImageColor3 = Color3.fromRGB(0, 0, 0),
 			ImageTransparency = 0.1,
 		}),
+	})
+
+	local SearchFrame = New("Frame", {
+		Size = UDim2.new(1, -16, 0, 24),
+		Position = UDim2.fromOffset(8, 6),
+		BackgroundTransparency = 0.6,
+		Parent = DropdownHolderFrame,
+		ThemeTag = { BackgroundColor3 = "DropdownHolder" },
+	}, {
+		New("UICorner", { CornerRadius = UDim.new(0, 4) }),
+		New("UIStroke", {
+			Transparency = 0.5,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			ThemeTag = { Color = "InElementBorder" },
+		}),
+		New("ImageLabel", {
+			Name = "Icon",
+			Size = UDim2.fromOffset(14, 14),
+			Position = UDim2.new(0, 8, 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			BackgroundTransparency = 1,
+			Image = Library:GetIcon("search"),
+			ThemeTag = { ImageColor3 = "SubText" },
+		}),
+	})
+
+	local SearchBox = New("TextBox", {
+		Size = UDim2.new(1, -36, 1, 0),
+		Position = UDim2.fromOffset(28, 0),
+		BackgroundTransparency = 1,
+		Text = "",
+		PlaceholderText = "search...",
+		TextSize = 13,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ClearTextOnFocus = false,
+		FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+		Parent = SearchFrame,
+		ThemeTag = {
+			TextColor3 = "Text",
+			PlaceholderColor3 = "SubText",
+		},
+	})
+
+	local EmptyLabel = New("TextLabel", {
+		Size = UDim2.new(1, -20, 0, 30),
+		Position = UDim2.new(0.5, 0, 0, 40),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundTransparency = 1,
+		Text = "No results",
+		TextSize = 12,
+		Visible = false,
+		Parent = DropdownHolderFrame,
+		ThemeTag = { TextColor3 = "SubText" },
 	})
 
 	local DropdownHolderCanvas = New("Frame", {
@@ -216,17 +269,50 @@ function Element:New(Idx, Config)
 	end
 
 	local ListSizeX = 0
+	local VisibleCount = #Dropdown.Values
+	local SEARCH_HEADER_HEIGHT = 40
+	local MIN_PANEL_HEIGHT = 74 -- search field + No results + padding
+
 	local function RecalculateListSize()
-		if #Dropdown.Values > 10 then
-			DropdownHolderCanvas.Size = UDim2.fromOffset(ListSizeX, 392)
+		local ContentHeight
+		if VisibleCount > 10 then
+			ContentHeight = 392
 		else
-			DropdownHolderCanvas.Size = UDim2.fromOffset(ListSizeX, DropdownListLayout.AbsoluteContentSize.Y + 10)
+			ContentHeight = DropdownListLayout.AbsoluteContentSize.Y + 10
 		end
+
+		-- A search with no matches leaves an empty list; keep the panel tall
+		-- enough that the search field and the empty state stay visible.
+		DropdownHolderCanvas.Size = UDim2.fromOffset(
+			ListSizeX,
+			math.max(MIN_PANEL_HEIGHT, SEARCH_HEADER_HEIGHT + ContentHeight)
+		)
 	end
 
 	local function RecalculateCanvasSize()
 		DropdownScrollFrame.CanvasSize = UDim2.fromOffset(0, DropdownListLayout.AbsoluteContentSize.Y)
 	end
+
+	local function ApplySearch()
+		local Query = string.lower(SearchBox.Text)
+		VisibleCount = 0
+
+		for Button, Data in next, Dropdown.Buttons do
+			local Match = Query == ""
+				or string.find(string.lower(tostring(Data.Value)), Query, 1, true) ~= nil
+			Button.Visible = Match
+			if Match then
+				VisibleCount = VisibleCount + 1
+			end
+		end
+
+		EmptyLabel.Visible = VisibleCount == 0
+		RecalculateCanvasSize()
+		RecalculateListSize()
+		RecalculateListPosition()
+	end
+
+	Creator.AddSignal(SearchBox:GetPropertyChangedSignal("Text"), ApplySearch)
 
 	RecalculateListPosition()
 	RecalculateListSize()
@@ -265,13 +351,45 @@ function Element:New(Idx, Config)
 		end
 	end)
 
+	local KeyConnection = Creator.AddSignal(UserInputService.InputBegan, function(Input)
+		if not Dropdown.Opened or Input.UserInputType ~= Enum.UserInputType.Keyboard then
+			return
+		end
+
+		if Input.KeyCode == Enum.KeyCode.Escape then
+			Dropdown:Close()
+			return
+		end
+
+		if Input.KeyCode == Enum.KeyCode.Return then
+			for Button, Data in next, Dropdown.Buttons do
+				if Button.Visible then
+					Data:Select()
+					if not Dropdown.Multi then
+						Dropdown:Close()
+					end
+					break
+				end
+			end
+		end
+	end)
+
 	local ScrollFrame = self.ScrollFrame
 	function Dropdown:Open()
 		Dropdown.Opened = true
 		ScrollFrame.ScrollingEnabled = false
 		DropdownHolderCanvas.Visible = true
+		SearchBox.Text = ""
+		ApplySearch()
 		RecalculateListSize()
 		RecalculateListPosition()
+		task.defer(function()
+			if Dropdown.Opened then
+				pcall(function()
+					SearchBox:CaptureFocus()
+				end)
+			end
+		end)
 		TweenService:Create(
 			DropdownHolderFrame,
 			TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
@@ -284,6 +402,8 @@ function Element:New(Idx, Config)
 		ScrollFrame.ScrollingEnabled = true
 		DropdownHolderFrame.Size = UDim2.fromScale(1, 0.6)
 		DropdownHolderCanvas.Visible = false
+		SearchBox.Text = ""
+		ApplySearch()
 	end
 
 	function Dropdown:Display()
@@ -457,14 +577,7 @@ function Element:New(Idx, Config)
 				SetSelTransparency(Selected and 0 or 1)
 			end
 
-			ConnectButton(ButtonLabel.InputBegan, function(Input)
-				if
-					Input.UserInputType ~= Enum.UserInputType.MouseButton1
-					and Input.UserInputType ~= Enum.UserInputType.Touch
-				then
-					return
-				end
-
+			function Table:Select()
 				local Try = not Selected
 				local CanChange = Try or Config.AllowNull or CountSelected() > 1
 
@@ -484,16 +597,28 @@ function Element:New(Idx, Config)
 					end
 				end
 
-				Table:UpdateButton()
+				self:UpdateButton()
 				Dropdown:Display()
 
 				Library:SafeCallback(Dropdown.Callback, Dropdown.Value)
 				Library:SafeCallback(Dropdown.Changed, Dropdown.Value)
+			end
+
+			ConnectButton(ButtonLabel.InputBegan, function(Input)
+				if
+					Input.UserInputType ~= Enum.UserInputType.MouseButton1
+					and Input.UserInputType ~= Enum.UserInputType.Touch
+				then
+					return
+				end
+
+				Table:Select()
 			end)
 
 			Table:UpdateButton()
 			Table.Button = Button
 			Table.ButtonLabel = ButtonLabel
+			Table.Value = Value
 			Buttons[Button] = Table
 		end
 
@@ -507,6 +632,7 @@ function Element:New(Idx, Config)
 
 		ListSizeX = ListSizeX + 30
 
+		ApplySearch()
 		RecalculateCanvasSize()
 		RecalculateListSize()
 		Dropdown:Display()
@@ -568,6 +694,7 @@ function Element:New(Idx, Config)
 
 		Creator.RemoveSignal(ListPositionConnection)
 		Creator.RemoveSignal(OutsideClickConnection)
+		Creator.RemoveSignal(KeyConnection)
 
 		local Index = table.find(Library.OpenFrames, DropdownHolderCanvas)
 		if Index then

@@ -103,6 +103,7 @@ Call these functions on a window.
 - `SelectTab(Index)` shows a tab.
 - `SetGroupOpen(Name, Open, Animated)` opens or closes a navigation group.
 - `ToggleGroup(Name)` opens a navigation group.
+- `SetNavQuery(Text)` filters the sidebar rows by title. The search field in the title bar drives it.
 - `Dialog(Config)` opens a dialog.
 - `Minimize()` hides the window. The island toggle is animated; the keybind is instant.
 
@@ -118,6 +119,8 @@ Call these functions on a tab or on a section to add an element. Most elements t
 - `AddInput(Name, Config)`
 
 Most elements have `SetValue`, `OnChanged` and `Destroy`. A dropdown also has `SetValues` and `GetActiveValues`. A keybind also has `GetState`.
+
+A dropdown has a search field at the top of its list. Type to filter the options; `Enter` selects the first match and `Esc` closes the list. This works for both single and multi select, and shows "No results" when nothing matches.
 
 A dropdown with `Multi = true` takes a table. You can pass a map, an array or one value.
 
