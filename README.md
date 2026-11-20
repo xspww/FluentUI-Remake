@@ -86,35 +86,60 @@ Child rows are indented, have no chevron or badge and do not react to hover. The
 
 A small pill sits at the top centre of the screen. Tapping it toggles the interface: the window shrinks into the pill on close, and the pill expands back into the window on open. The folded window tracks the pill's live position. The pill shows an avatar, a name, a breathing status dot and the real frame rate measured over a 5-second window; the raw value is also on `Fluent.DynamicIsland.RawFps`. Set `IslandAvatar` and `IslandName` in `CreateWindow`, or call `Fluent.DynamicIsland:SetAvatar(image)` / `:SetName(text)` later. `IslandAvatar` accepts an `rbxassetid://` id or any `http(s)://` image URL — on executors with `request`, `writefile` and `getcustomasset`, the URL is fetched and converted to an `rbxasset://` content id. Set `DynamicIsland = false` to disable it.
 
-An interactive HTML mock of the sidebar is in [preview/sidebar-groups.html](preview/sidebar-groups.html). The design notes are in [plans/](plans/).
-
 ## Loading overlay
 
-A centred themed panel with one horizontal progress line fades in while the interface is built. The window and the island pill stay hidden until loading finishes, so the interface appears only afterwards. There is no dark full-screen background — the panel sits directly over the game. It closes when the first element is added, with a short minimum display time so it never flashes for a single frame, and a safety timeout in case no element is ever added. Set `Loading = false` in `CreateWindow` to turn it off, or pass a table to change its copy:
+A centred themed panel with one horizontal progress line. The window and the island pill stay hidden until loading finishes, so the interface appears only afterwards. There is no dark full-screen background — the panel sits directly over the game.
+
+### Automatic splash
+
+`CreateWindow` shows it by default and closes it when the first element is added. A short minimum display time stops it flashing for a single frame, and a safety timeout closes it if no element is ever added. Pass a table to change the copy and timings:
 
 ```lua
 local Window = Fluent:CreateWindow({
     Title = "Fluent",
-    Loading = { Title = "Starting", Text = "Building the interface...", MinDuration = 0.6 },
+    Loading = {
+        Title = "Starting",
+        Text = "Building the interface...",
+        MinDuration = 0.6, -- at least 0.6s on screen
+        Timeout = 15,      -- default 8s
+    },
 })
 ```
 
-For a longer operation, call the API yourself. Omit `Progress` for an indeterminate sweep; pass `0`–`1` for a measured bar:
+Set `Loading = false` to turn the splash off.
+
+### Manual loading
+
+Use this for work of your own. The percentage is whatever your script passes to `SetProgress`; the library does not measure progress for you. Omit `Progress` for an indeterminate sweep.
 
 ```lua
-local Loading = Fluent:ShowLoading({ Title = "Loading", Text = "Fetching data..." })
+local Loading = Fluent:ShowLoading({
+    Title = "Loading",
+    Text = "Starting...",
+    Timeout = 30,
+})
 
-Loading:SetProgress(0.4)
-Loading:SetText("Almost done")
-Loading:SetProgress(1)
+for i, work in ipairs(steps) do
+    Loading:SetText(("Working %d/%d"):format(i, #steps))
+    work()
+    Loading:SetProgress(i / #steps)
+end
+
 Loading:Close() -- or Fluent:HideLoading()
-
--- Convenience for the current overlay:
-Fluent:SetLoadingProgress(0.7)
-Fluent:SetLoadingText("Still working...")
 ```
 
-The overlay uses critically damped springs, starts at `scale 0.97` instead of zero, and exits along the same path it entered. Set `Fluent.ReducedMotion = true` (or pass `ReducedMotion = true` to `ShowLoading`) to drop movement and keep only the fade.
+`ShowLoading` returns a handle:
+
+- `SetProgress(0..1)` moves the bar and updates the percentage
+- `SetIndeterminate(true)` switches to the linear sweep
+- `SetText(Text)` and `SetTitle(Text)` change the copy
+- `Close()` fades out and removes it; `Destroy()` removes it at once
+
+Calling `ShowLoading` again while the panel is open updates that panel instead of stacking another one.
+
+Helpers for the current panel: `Fluent:SetLoadingProgress(Value)`, `Fluent:SetLoadingText(Text)`, `Fluent:FinishLoading()` (respects `MinDuration`) and `Fluent:HideLoading()` (immediate).
+
+The animation uses critically damped springs, starts at `scale 0.97` instead of zero, and exits along the same path it entered. Set `Fluent.ReducedMotion = true` (or pass `ReducedMotion = true` to `ShowLoading`) to drop movement and keep only the fade.
 
 ## API
 
@@ -123,7 +148,7 @@ Call these functions on the library.
 - `CreateWindow(Config)` creates the window. The library holds one window. `Config` takes `Title`, `SubTitle`, `Theme`, `MinimizeKey`, `DynamicIsland`, `IslandName`, `IslandAvatar` (an image id or `rbxassetid://` url) and `Loading`. The window size is fixed at 635x541.
 - `SetTheme(Name)` changes the theme. The names are in `Main.Themes`. An unknown name is ignored.
 - `Notify(Config)` shows a notification.
-- `ShowLoading(Config)` shows the centred loading overlay and returns a handle.
+- `ShowLoading(Config)` shows the centred loading overlay and returns a handle. `Config` takes `Title`, `Text`, `Progress`, `MinDuration`, `Timeout`, `Parent` and `ReducedMotion`. The handle has `SetProgress`, `SetIndeterminate`, `SetText`, `SetTitle`, `Close` and `Destroy`.
 - `HideLoading()` closes the overlay.
 - `FinishLoading()` closes the overlay after its minimum display time.
 - `SetLoadingProgress(Value)` and `SetLoadingText(Text)` update the live overlay.
