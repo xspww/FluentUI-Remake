@@ -55,6 +55,9 @@ function Element:New(Idx, Config)
 		Value = NormalizeValue(Config.Default),
 		Multi = Config.Multi,
 		Buttons = {},
+		-- Buttons is keyed by the option Instance, so its `next` order is
+		-- arbitrary. Order mirrors the visible list for keyboard selection.
+		Order = {},
 		Opened = false,
 		Type = "Dropdown",
 		Callback = Config.Callback or function() end,
@@ -362,8 +365,8 @@ function Element:New(Idx, Config)
 		end
 
 		if Input.KeyCode == Enum.KeyCode.Return then
-			for Button, Data in next, Dropdown.Buttons do
-				if Button.Visible then
+			for _, Data in ipairs(Dropdown.Order) do
+				if Data.Button.Visible then
 					Data:Select()
 					if not Dropdown.Multi then
 						Dropdown:Close()
@@ -463,6 +466,7 @@ function Element:New(Idx, Config)
 		end
 
 		table.clear(Dropdown.Buttons)
+		table.clear(Dropdown.Order)
 		local Buttons = Dropdown.Buttons
 
 		for _, Value in next, Dropdown.Values do
@@ -620,6 +624,7 @@ function Element:New(Idx, Config)
 			Table.ButtonLabel = ButtonLabel
 			Table.Value = Value
 			Buttons[Button] = Table
+			Dropdown.Order[#Dropdown.Order + 1] = Table
 		end
 
 		ListSizeX = 0
