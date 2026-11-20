@@ -10,6 +10,7 @@ local Themes = require(Root.Themes)
 local Components = Root.Components
 local NotificationModule = require(Components.Notification)
 local DynamicIsland = require(Components.DynamicIsland)
+local LoadingModule = require(Components.Loading)
 
 local New = Creator.New
 
@@ -69,6 +70,13 @@ local Library = {
 	Window = nil,
 	WindowFrame = nil,
 	Unloaded = false,
+
+	-- One centred overlay at a time. The token invalidates pending timers
+	-- when the overlay is replaced or closed.
+	Loading = nil,
+	LoadingToken = nil,
+	LoadingIsAuto = false,
+	ReducedMotion = false,
 
 	Theme = "Dark",
 	DialogOpen = false,
@@ -153,6 +161,13 @@ Elements.__index = Elements
 
 for _, ElementComponent in ipairs(ElementsTable) do
 	Elements["Add" .. ElementComponent.__type] = function(self, Idx, Config)
+		-- The auto splash hands off to the interface as soon as there is
+		-- something real to look at. A manual overlay stays up until the
+		-- script closes it or its own timeout fires.
+		if Library.LoadingIsAuto then
+			Library:FinishLoading()
+		end
+
 		ElementComponent.Container = self.Container
 		ElementComponent.Type = self.Type
 		ElementComponent.ScrollFrame = self.ScrollFrame
@@ -163,6 +178,102 @@ for _, ElementComponent in ipairs(ElementsTable) do
 end
 
 Library.Elements = Elements
+
+-- Loading overlay -----------------------------------------------------------
+
+function Library:ShowLoading(Config)
+	if Library.Unloaded then
+		return
+	end
+
+	Config = Config or {}
+
+	-- A second show updates the live overlay instead of stacking another one.
+	if Library.Loading and not Library.Loading.Closed then
+		local Handle = Library.Loading
+		if Config.Title ~= nil then
+			Handle:SetTitle(Config.Title)
+		end
+		if Config.Text ~= nil then
+			Handle:SetText(Config.Text)
+		end
+		if Config.Progress ~= nil then
+			Handle:SetProgress(Config.Progress)
+		end
+		return Handle
+	end
+
+	local Handle = LoadingModule(Library, Config.Parent or GUI, {
+		Title = Config.Title,
+		Text = Config.Text,
+		Progress = Config.Progress,
+		ReducedMotion = Config.ReducedMotion,
+		MinDuration = Config.MinDuration,
+	})
+	Library.Loading = Handle
+	Library.LoadingIsAuto = Config.Auto == true
+
+	-- The safety timeout makes sure a script that never adds an element does
+	-- not leave the overlay up forever.
+	local Token = {}
+	Library.LoadingToken = Token
+	task.delay(Config.Timeout or 8, function()
+		if Library.LoadingToken == Token then
+			Library:HideLoading()
+		end
+	end)
+
+	return Handle
+end
+
+function Library:HideLoading()
+	local Handle = Library.Loading
+	if not Handle then
+		return
+	end
+	Library.Loading = nil
+	Library.LoadingToken = nil
+	Library.LoadingIsAuto = false
+
+	-- The window (and its pill) stay hidden until this moment, so the
+	-- interface appears as the loader fades rather than sitting behind it.
+	if Library.Window then
+		Library.Window:SetHidden(false)
+	end
+	if Library.DynamicIsland and Library.DynamicIsland.Root then
+		Library.DynamicIsland.Root.Visible = true
+	end
+	Handle:Close()
+end
+
+function Library:FinishLoading()
+	local Handle = Library.Loading
+	if not Handle or Handle.Finishing then
+		return
+	end
+	Handle.Finishing = true
+
+	-- Even a script that builds instantly gets a short, readable splash
+	-- instead of a one-frame flash.
+	local Wait = math.max(0, Handle:GetMinDuration() - Handle:GetElapsed())
+	task.delay(Wait, function()
+		if Library.Loading == Handle then
+			Library:HideLoading()
+		end
+	end)
+end
+
+function Library:SetLoadingProgress(Value)
+	if Library.Loading then
+		Library.Loading:SetProgress(Value)
+	end
+end
+
+function Library:SetLoadingText(Text)
+	if Library.Loading then
+		Library.Loading:SetText(Text)
+	end
+end
 
 function Library:CreateWindow(Config)
 	assert(Config.Title, "Window - Missing Title")
@@ -180,6 +291,18 @@ function Library:CreateWindow(Config)
 	local Theme = Themes.Resolve(Config.Theme)
 	Library.Theme = Theme
 
+	-- The splash covers the window while it is built and is dismissed by the
+	-- first element (or by its safety timeout). Loading=false opts out; a
+	-- table configures Title, Text, MinDuration, Timeout and ReducedMotion.
+	local Splash = Config.Loading
+	if Splash ~= false then
+		local SplashConfig = type(Splash) == "table" and table.clone(Splash) or {}
+		SplashConfig.Auto = true
+		SplashConfig.Title = SplashConfig.Title or ("Loading " .. Config.Title)
+		SplashConfig.Text = SplashConfig.Text or "Preparing interface..."
+		Library:ShowLoading(SplashConfig)
+	end
+
 	local Window = require(Components.Window)({
 		Parent = GUI,
 		Size = Config.Size,
@@ -191,6 +314,10 @@ function Library:CreateWindow(Config)
 	Library.Window = Window
 	Library:SetTheme(Theme)
 
+	if Splash ~= false then
+		Window:SetHidden(true)
+	end
+
 	if Config.DynamicIsland ~= false then
 		Library.DynamicIsland = DynamicIsland(Library, GUI)
 		if Config.IslandAvatar then
@@ -198,6 +325,9 @@ function Library:CreateWindow(Config)
 		end
 		if Config.IslandName then
 			Library.DynamicIsland:SetName(Config.IslandName)
+		end
+		if Splash ~= false then
+			Library.DynamicIsland.Root.Visible = false
 		end
 	end
 
@@ -219,6 +349,13 @@ function Library:Destroy()
 	end
 
 	Library.Unloaded = true
+
+	if Library.Loading then
+		Library.Loading:Destroy()
+		Library.Loading = nil
+		Library.LoadingToken = nil
+		Library.LoadingIsAuto = false
+	end
 
 	Creator.Destroy()
 

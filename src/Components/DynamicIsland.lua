@@ -26,6 +26,7 @@ local PRESS_FREQUENCY = 14
 local RELEASE_FREQUENCY = 8
 local BREATH_HZ = 0.6
 local FPS_INTERVAL = 5
+local FPS_TEXT_PULSE = 0.16 -- 160ms, opacity only (reduced-motion safe)
 
 local function setGoal(Motor, Value, Frequency)
 	Motor:setGoal(Spring(Value, { frequency = Frequency, dampingRatio = 1 }))
@@ -93,6 +94,7 @@ return function(Library, Parent)
 	local Island = {}
 	local Window = Library.Window
 	local Breath, SampleTime, FrameCount = 0, 0, 0
+	local FpsPulse = 0
 
 	local Scaler = New("UIScale", { Scale = 1 })
 	Island.ScaleMotor = Flipper.SingleMotor.new(1)
@@ -298,6 +300,16 @@ return function(Library, Parent)
 		Island.Dot.BackgroundTransparency = Wave * 0.35
 		Island.DotGlow.BackgroundTransparency = 0.75 + Wave * 0.2
 
+		-- Text change feedback: a short alpha dip, not a scale or position
+		-- change. sin() peaks in the middle and lands back at 0 on both ends,
+		-- so the label never jumps when the number updates.
+		if FpsPulse > 0 then
+			FpsPulse = math.max(0, FpsPulse - Delta / FPS_TEXT_PULSE)
+			Island.FpsLabel.TextTransparency = math.sin(FpsPulse * math.pi) * 0.45
+		elseif Island.FpsLabel.TextTransparency ~= 0 then
+			Island.FpsLabel.TextTransparency = 0
+		end
+
 		-- Real frame rate: count actual Heartbeats over a 5s window instead
 		-- of reading GetRealPhysicsFPS(), which reports the target rate.
 		-- Display the real measured value; uncapped clients report high numbers.
@@ -307,6 +319,7 @@ return function(Library, Parent)
 			Island.RawFps = FrameCount / SampleTime
 			local Fps = math.max(1, math.floor(Island.RawFps + 0.5))
 			Island.FpsLabel.Text = tostring(Fps) .. " fps"
+			FpsPulse = 1
 			task.defer(layout)
 			SampleTime, FrameCount = 0, 0
 		end

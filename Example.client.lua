@@ -209,6 +209,24 @@ do
         end
     })
 
+    InterfaceSection:AddButton({
+        Title = "Preview loading overlay",
+        Description = "Centred progress line, two seconds.",
+        Callback = function()
+            local Loading = Main:ShowLoading({
+                Title = "Loading",
+                Text = "Preparing example data..."
+            })
+            task.spawn(function()
+                for Step = 1, 20 do
+                    Loading:SetProgress(Step / 20)
+                    task.wait(0.1)
+                end
+                Loading:Close()
+            end)
+        end
+    })
+
     InterfaceSection:AddInput("IslandAvatarUrl", {
         Title = "Island avatar",
         Description = "http(s) image url or rbxassetid://...",

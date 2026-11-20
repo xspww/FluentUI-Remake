@@ -136,7 +136,7 @@ local function getGroup(Name, Icon)
 			Position = UDim2.new(0, 8, 0.5, 0),
 			BackgroundTransparency = 1,
 			Image = Icon,
-			ThemeTag = { ImageColor3 = "SubText" },
+			ThemeTag = { ImageColor3 = "Text" },
 		}),
 		New("TextLabel", {
 			Name = "Label",
@@ -178,9 +178,6 @@ local function getGroup(Name, Icon)
 	Group.ExpandMotor:onStep(function(Value)
 		Group.Clips.Size = UDim2.new(1, 0, 0, Group.ContentHeight * Value)
 		Group.Sublist.GroupTransparency = 1 - math.clamp(Value * 1.6, 0, 1)
-		local Dim = Creator.GetThemeProperty("SubText")
-		local Bright = Creator.GetThemeProperty("Accent")
-		Group.Header.Icon.ImageColor3 = Dim:Lerp(Bright, Value)
 		Group.Header.Label.TextColor3 = Creator.GetThemeProperty("SubText"):Lerp(
 			Creator.GetThemeProperty("Text"), Value)
 		-- Rows shift while a group folds, so the selector must retarget too.

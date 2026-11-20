@@ -13,6 +13,7 @@ The library gives you a window, tabs, sections and the usual elements. It runs i
 - Fixed 635x541 window — resizing and maximizing were removed
 - Solid, opaque themes — the acrylic blur and transparency switches were removed
 - A Dynamic Island pill toggles the interface; the window morphs into it and back
+- A centred loading overlay with a single progress line, shown while the interface is built
 - Sidebar navigation groups when you have many tabs
 - Seven themes, including a navy blue one
 - Does not need `syn`
@@ -87,15 +88,49 @@ A small pill sits at the top centre of the screen. Tapping it toggles the interf
 
 An interactive HTML mock of the sidebar is in [preview/sidebar-groups.html](preview/sidebar-groups.html). The design notes are in [plans/](plans/).
 
+## Loading overlay
+
+A centred themed panel with one horizontal progress line fades in while the interface is built. The window and the island pill stay hidden until loading finishes, so the interface appears only afterwards. There is no dark full-screen background — the panel sits directly over the game. It closes when the first element is added, with a short minimum display time so it never flashes for a single frame, and a safety timeout in case no element is ever added. Set `Loading = false` in `CreateWindow` to turn it off, or pass a table to change its copy:
+
+```lua
+local Window = Fluent:CreateWindow({
+    Title = "Fluent",
+    Loading = { Title = "Starting", Text = "Building the interface...", MinDuration = 0.6 },
+})
+```
+
+For a longer operation, call the API yourself. Omit `Progress` for an indeterminate sweep; pass `0`–`1` for a measured bar:
+
+```lua
+local Loading = Fluent:ShowLoading({ Title = "Loading", Text = "Fetching data..." })
+
+Loading:SetProgress(0.4)
+Loading:SetText("Almost done")
+Loading:SetProgress(1)
+Loading:Close() -- or Fluent:HideLoading()
+
+-- Convenience for the current overlay:
+Fluent:SetLoadingProgress(0.7)
+Fluent:SetLoadingText("Still working...")
+```
+
+The overlay uses critically damped springs, starts at `scale 0.97` instead of zero, and exits along the same path it entered. Set `Fluent.ReducedMotion = true` (or pass `ReducedMotion = true` to `ShowLoading`) to drop movement and keep only the fade.
+
 ## API
 
 Call these functions on the library.
 
-- `CreateWindow(Config)` creates the window. The library holds one window. `Config` takes `Title`, `SubTitle`, `Theme`, `MinimizeKey`, `DynamicIsland`, `IslandName` and `IslandAvatar` (an image id or `rbxassetid://` url). The window size is fixed at 635x541.
+- `CreateWindow(Config)` creates the window. The library holds one window. `Config` takes `Title`, `SubTitle`, `Theme`, `MinimizeKey`, `DynamicIsland`, `IslandName`, `IslandAvatar` (an image id or `rbxassetid://` url) and `Loading`. The window size is fixed at 635x541.
 - `SetTheme(Name)` changes the theme. The names are in `Main.Themes`. An unknown name is ignored.
 - `Notify(Config)` shows a notification.
+- `ShowLoading(Config)` shows the centred loading overlay and returns a handle.
+- `HideLoading()` closes the overlay.
+- `FinishLoading()` closes the overlay after its minimum display time.
+- `SetLoadingProgress(Value)` and `SetLoadingText(Text)` update the live overlay.
 - `GetIcon(Name)` returns the url of a Lucide icon.
 - `Destroy()` removes the window, the elements and the signals.
+
+Set `Fluent.ReducedMotion = true` to make the loading overlay fade without movement.
 
 Call these functions on a window.
 

@@ -40,6 +40,7 @@ return function(Config)
 
 	local Window = {
 		Minimized = false,
+		Hidden = false,
 		Size = WINDOW_SIZE,
 		CurrentPos = 0,
 		TabWidth = 0,
@@ -230,7 +231,7 @@ return function(Config)
 		end
 
 		Window.Root.GroupTransparency = 1 - math.clamp(WidthProgress * 2.2, 0, 1)
-		Window.Root.Visible = not (Window.Minimized and WidthProgress <= 0.01)
+		Window.Root.Visible = not Window.Hidden and not (Window.Minimized and WidthProgress <= 0.01)
 	end
 
 	Window.WidthMotor:onStep(applyMorph)
@@ -505,6 +506,14 @@ return function(Config)
 
 	function Window:SelectTab(Tab)
 		TabModule:SelectTab(Tab)
+	end
+
+	-- Kept hidden while the centred loader runs, so the interface appears
+	-- only once loading has finished. applyMorph respects the flag, which
+	-- keeps the island fold from revealing an unfinished window.
+	function Window:SetHidden(Hidden)
+		self.Hidden = Hidden == true
+		applyMorph()
 	end
 
 	Creator.AddSignal(Window.TabHolder:GetPropertyChangedSignal("CanvasPosition"), function()
