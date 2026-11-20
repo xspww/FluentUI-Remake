@@ -57,6 +57,16 @@ globals:
     args:
       - type: string
       - type: string
+  request:
+    args:
+      - type: table
+    returns:
+      - type: table
+  getcustomasset:
+    args:
+      - type: string
+    returns:
+      - type: string
   listfiles:
     args:
       - type: string

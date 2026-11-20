@@ -83,7 +83,7 @@ Child rows are indented, have no chevron or badge and do not react to hover. The
 
 ## Dynamic Island
 
-A small pill sits at the top centre of the screen. Tapping it toggles the interface: the window shrinks into the pill on close, and the pill expands back into the window on open. The folded window tracks the pill's live position. Set `DynamicIsland = false` in `CreateWindow` to disable it; the instance is available as `Fluent.DynamicIsland`.
+A small pill sits at the top centre of the screen. Tapping it toggles the interface: the window shrinks into the pill on close, and the pill expands back into the window on open. The folded window tracks the pill's live position. The pill shows an avatar, a name, a breathing status dot and the real frame rate measured over a 5-second window; the raw value is also on `Fluent.DynamicIsland.RawFps`. Set `IslandAvatar` and `IslandName` in `CreateWindow`, or call `Fluent.DynamicIsland:SetAvatar(image)` / `:SetName(text)` later. `IslandAvatar` accepts an `rbxassetid://` id or any `http(s)://` image URL — on executors with `request`, `writefile` and `getcustomasset`, the URL is fetched and converted to an `rbxasset://` content id. Set `DynamicIsland = false` to disable it.
 
 An interactive HTML mock of the sidebar is in [preview/sidebar-groups.html](preview/sidebar-groups.html). The design notes are in [plans/](plans/).
 
@@ -91,7 +91,7 @@ An interactive HTML mock of the sidebar is in [preview/sidebar-groups.html](prev
 
 Call these functions on the library.
 
-- `CreateWindow(Config)` creates the window. The library holds one window. `Config` takes `Title`, `SubTitle`, `Theme`, `MinimizeKey` and `DynamicIsland`. The window size is fixed at 635x541.
+- `CreateWindow(Config)` creates the window. The library holds one window. `Config` takes `Title`, `SubTitle`, `Theme`, `MinimizeKey`, `DynamicIsland`, `IslandName` and `IslandAvatar` (an image id or `rbxassetid://` url). The window size is fixed at 635x541.
 - `SetTheme(Name)` changes the theme. The names are in `Main.Themes`. An unknown name is ignored.
 - `Notify(Config)` shows a notification.
 - `GetIcon(Name)` returns the url of a Lucide icon.

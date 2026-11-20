@@ -193,6 +193,12 @@ function Library:CreateWindow(Config)
 
 	if Config.DynamicIsland ~= false then
 		Library.DynamicIsland = DynamicIsland(Library, GUI)
+		if Config.IslandAvatar then
+			Library.DynamicIsland:SetAvatar(Config.IslandAvatar)
+		end
+		if Config.IslandName then
+			Library.DynamicIsland:SetName(Config.IslandName)
+		end
 	end
 
 	return Window

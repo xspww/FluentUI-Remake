@@ -176,7 +176,7 @@ return function(Config)
 	-- springs (Apple §3), the corner radius follows height so the rectangle
 	-- turns into a capsule, and the centre travels to the island (§7).
 	local ISLAND_CENTRE = Vector2.new(Viewport.X / 2, 10 + 34 / 2)
-	local PILL_SIZE = Vector2.new(104, 34) -- must match DynamicIsland.lua
+	local PILL_SIZE = Vector2.new(190, 34) -- Y is the pill height; X is only a width fallback
 	local OPEN_SIZE = Vector2.new(Window.Size.X.Offset, Window.Size.Y.Offset)
 	local WINDOW_CORNER, PILL_CORNER = 8, 17
 
@@ -194,11 +194,18 @@ return function(Config)
 		return ISLAND_CENTRE
 	end
 
+	-- The island sizes itself to its text, so the folded width must be read
+	-- live instead of copied from a constant.
+	local function closedWidth()
+		local Island = Library.DynamicIsland
+		return Island and Island.Root.AbsoluteSize.X or 190
+	end
+
 	local contentShown = true
 	local function applyMorph()
 		local Width = Window.WidthMotor:getValue()
 		local Height = Window.HeightMotor:getValue()
-		local WidthProgress = math.clamp((Width - PILL_SIZE.X) / (OPEN_SIZE.X - PILL_SIZE.X), 0, 1)
+		local WidthProgress = math.clamp((Width - closedWidth()) / (OPEN_SIZE.X - closedWidth()), 0, 1)
 		local HeightProgress = math.clamp((Height - PILL_SIZE.Y) / (OPEN_SIZE.Y - PILL_SIZE.Y), 0, 1)
 
 		Window.Root.Size = UDim2.fromOffset(Width, Height)
@@ -372,7 +379,7 @@ return function(Config)
 	function Window:Minimize(Silent, Animated)
 		Window.Minimized = not Window.Minimized
 		local Closing = Window.Minimized
-		local GoalWidth = Closing and PILL_SIZE.X or OPEN_SIZE.X
+		local GoalWidth = Closing and closedWidth() or OPEN_SIZE.X
 		local GoalHeight = Closing and PILL_SIZE.Y or OPEN_SIZE.Y
 
 		if Animated then

@@ -80,7 +80,7 @@ return function(Config)
 
 	TitleBar.SearchField = New("Frame", {
 		Size = UDim2.new(0, 120, 0, 24),
-		Position = UDim2.new(1, -4, 0.5, 0),
+		Position = UDim2.new(1, -14, 0.5, 0),
 		AnchorPoint = Vector2.new(1, 0.5),
 		BackgroundTransparency = 0.6,
 		Parent = TitleBar.Frame,

@@ -208,6 +208,33 @@ do
             Window:SetGroupOpen("Account", true, true)
         end
     })
+
+    InterfaceSection:AddInput("IslandAvatarUrl", {
+        Title = "Island avatar",
+        Description = "http(s) image url or rbxassetid://...",
+        Default = "https://i.pinimg.com/736x/50/06/db/5006db29533cb3264f1317613ff7be01.jpg",
+        Placeholder = "https://...",
+    })
+
+    InterfaceSection:AddButton({
+        Title = "Set island avatar",
+        Callback = function()
+            Main.DynamicIsland:SetAvatar(Main.Options.IslandAvatarUrl.Value)
+        end
+    })
+
+    InterfaceSection:AddInput("IslandName", {
+        Title = "Island name",
+        Default = "xspww",
+        Placeholder = "Name",
+    })
+
+    InterfaceSection:AddButton({
+        Title = "Set island name",
+        Callback = function()
+            Main.DynamicIsland:SetName(Main.Options.IslandName.Value)
+        end
+    })
 end
 
 do
