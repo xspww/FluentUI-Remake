@@ -136,7 +136,7 @@ local function getGroup(Name, Icon)
 			Position = UDim2.new(0, 8, 0.5, 0),
 			BackgroundTransparency = 1,
 			Image = Icon,
-			ThemeTag = { ImageColor3 = "Text" },
+			ThemeTag = { ImageColor3 = "SubText" },
 		}),
 		New("TextLabel", {
 			Name = "Label",
@@ -178,8 +178,12 @@ local function getGroup(Name, Icon)
 	Group.ExpandMotor:onStep(function(Value)
 		Group.Clips.Size = UDim2.new(1, 0, 0, Group.ContentHeight * Value)
 		Group.Sublist.GroupTransparency = 1 - math.clamp(Value * 1.6, 0, 1)
-		Group.Header.Label.TextColor3 = Creator.GetThemeProperty("SubText"):Lerp(
-			Creator.GetThemeProperty("Text"), Value)
+		-- Icon and label share one colour ramp, so a group never shows a
+		-- bright icon beside a dim title (and vice versa when it opens).
+		local Dim = Creator.GetThemeProperty("SubText")
+		local Bright = Creator.GetThemeProperty("Text")
+		Group.Header.Icon.ImageColor3 = Dim:Lerp(Bright, Value)
+		Group.Header.Label.TextColor3 = Dim:Lerp(Bright, Value)
 		-- Rows shift while a group folds, so the selector must retarget too.
 		refreshSelector()
 	end)
