@@ -320,9 +320,11 @@ return function(Config)
 	end
 
 	-- Read the motor's live position; these corrections arrive after startup.
-	local function ReclampToViewport()
+	-- Pass Size when the shell is folded: its AbsoluteSize is the pill's, not
+	-- the full window the position has to fit.
+	local function ReclampToViewport(Size)
 		local Current = Vector2.new(Window.Position.X.Offset, Window.Position.Y.Offset)
-		local Clamped = ClampToViewport(Current)
+		local Clamped = ClampToViewport(Current, Size)
 		PosMotor:setGoal({
 			X = Instant(Clamped.X),
 			Y = Instant(Clamped.Y),
@@ -415,6 +417,12 @@ return function(Config)
 		local Closing = Window.Minimized
 		local GoalWidth = Closing and closedWidth() or OPEN_SIZE.X
 		local GoalHeight = Closing and PILL_SIZE.Y or OPEN_SIZE.Y
+
+		-- A clamp applied while the window was folded can leave the stored
+		-- position off-screen for the full-size shell, so re-clamp on reopen.
+		if not Closing then
+			ReclampToViewport(OPEN_SIZE)
+		end
 
 		if Animated then
 			-- Width travels further than height, so they get their own

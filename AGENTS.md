@@ -53,7 +53,7 @@ The executor can only read files inside its workspace. Custom avatar URLs need `
 - Every text instance uses the built-in `rbxasset://fonts/families/GothamSSm.json` family. Do not reintroduce `rbxassetid://12187365364` or `Enum.Font.SourceSans`.
 - The FPS readout is measured over a 5s Heartbeat window. It uses a clipped viewport with one sharp label and four ghost labels for the blur scroll.
 - `Island:SetText(Text)` pins arbitrary readout text and stops automatic overwrite. `SetText(nil)` resumes FPS. `SetFpsFormat(fn)` shapes the auto string as `fn(RawFps, RoundedFps)`. `SetStat` and `ResetStat` are aliases.
-- Window clamp is instant. It runs at startup, on viewport and camera changes, and when a drag ends. Do not add easing to the automatic correction.
+- Window clamp is instant. It runs at startup, on viewport and camera changes, when a drag ends, and when the window reopens from minimize. Reopen passes the full `OPEN_SIZE`, because a folded window's `AbsoluteSize` is the pill's size. Do not add easing to the automatic correction.
 - ReducedMotion changes text instantly for FPS and keeps only the fade for the loading overlay.
 - `SaveManager` uses executor file APIs and will not work in plain Studio.
 - The specs cover Flipper, SaveManager, Themes and a reimplementation of tab selection. They do not cover rendering, Loading, DynamicIsland or InterfaceManager. Live verification is required for UI changes.
