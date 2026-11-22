@@ -319,6 +319,29 @@ return function(Config)
 		})
 	end
 
+	-- Read the motor's live position; these corrections arrive after startup.
+	local function ReclampToViewport()
+		local Current = Vector2.new(Window.Position.X.Offset, Window.Position.Y.Offset)
+		local Clamped = ClampToViewport(Current)
+		PosMotor:setGoal({
+			X = Instant(Clamped.X),
+			Y = Instant(Clamped.Y),
+		})
+	end
+
+	local function watchCamera()
+		local Camera = Workspace.CurrentCamera
+		if Camera then
+			Creator.AddSignal(Camera:GetPropertyChangedSignal("ViewportSize"), ReclampToViewport)
+		end
+	end
+
+	watchCamera()
+	Creator.AddSignal(Workspace:GetPropertyChangedSignal("CurrentCamera"), function()
+		watchCamera()
+		ReclampToViewport()
+	end)
+
 	Creator.AddSignal(Window.TitleBar.Frame.InputBegan, function(Input)
 		if
 			Input.UserInputType ~= Enum.UserInputType.MouseButton1
@@ -360,6 +383,7 @@ return function(Config)
 		if Dragging and (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input == DragTouch) then
 			Dragging = false
 			DragTouch = nil
+			ReclampToViewport()
 		end
 
 	end)

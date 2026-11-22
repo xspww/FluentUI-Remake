@@ -382,9 +382,58 @@ return function(Library, Parent)
 		Island.LayoutMotor:setGoal(Spring(1, { frequency = LAYOUT_FREQUENCY, dampingRatio = 1 }))
 	end
 
+	-- Keep sampling FPS while pinned so releasing the override can resume with
+	-- the latest measurement instead of waiting for the next window.
+	local TextOverride, FpsFormat
+
+	local function automaticText()
+		if Island.RawFps == nil then
+			return "-- fps"
+		end
+		local Rounded = math.max(1, math.floor(Island.RawFps + 0.5))
+		if FpsFormat then
+			return tostring(FpsFormat(Island.RawFps, Rounded))
+		end
+		return tostring(Rounded) .. " fps"
+	end
+
+	local function showText(Text)
+		Island.FpsLabel.Text = Text
+		if Library.ReducedMotion then
+			CurrentEntry.SetText(Text)
+		else
+			startScroll(Text)
+		end
+		task.defer(layout)
+	end
+
 	function Island:SetName(Name)
 		self.NameLabel.Text = tostring(Name)
 		task.defer(layout)
+	end
+
+	function Island:SetText(Text)
+		if Text == nil then
+			TextOverride = nil
+			showText(automaticText())
+		else
+			TextOverride = tostring(Text)
+			showText(TextOverride)
+		end
+		return self
+	end
+
+	function Island:SetFpsFormat(Format)
+		FpsFormat = type(Format) == "function" and Format or nil
+		return self
+	end
+
+	function Island:SetStat(Text)
+		return self:SetText(Text)
+	end
+
+	function Island:ResetStat()
+		return self:SetText(nil)
 	end
 
 	function Island:SetAvatar(Image)
@@ -450,15 +499,9 @@ return function(Library, Parent)
 		FrameCount = FrameCount + 1
 		if SampleTime >= FPS_INTERVAL then
 			Island.RawFps = FrameCount / SampleTime
-			local Fps = math.max(1, math.floor(Island.RawFps + 0.5))
-			local Text = tostring(Fps) .. " fps"
-			Island.FpsLabel.Text = Text
-			if Library.ReducedMotion then
-				CurrentEntry.SetText(Text)
-			else
-				startScroll(Text)
+			if TextOverride == nil then
+				showText(automaticText())
 			end
-			task.defer(layout)
 			SampleTime, FrameCount = 0, 0
 		end
 	end)
