@@ -1,7 +1,7 @@
 -- A floating Dynamic Island pill at the top centre. Tapping it toggles the
 -- interface. The pill carries an avatar, a name, a breathing status dot and a
--- live FPS readout. Motion: instant press feedback, no overshoot, and a slow
--- ambient breath on the dot only.
+-- live FPS readout. Motion: instant press feedback, no overshoot, a slow
+-- ambient breath on the dot, and a blurred scroll on the FPS text.
 
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -26,7 +26,10 @@ local PRESS_FREQUENCY = 14
 local RELEASE_FREQUENCY = 8
 local BREATH_HZ = 0.6
 local FPS_INTERVAL = 5
-local FPS_TEXT_PULSE = 0.16 -- 160ms, opacity only (reduced-motion safe)
+local SCROLL_DISTANCE = 20
+local SCROLL_FREQUENCY = 5
+local GHOST_OFFSETS = { -2.5, -1, 1, 2.5 }
+local TEXT_FONT = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
 
 local function setGoal(Motor, Value, Frequency)
 	Motor:setGoal(Spring(Value, { frequency = Frequency, dampingRatio = 1 }))
@@ -94,7 +97,6 @@ return function(Library, Parent)
 	local Island = {}
 	local Window = Library.Window
 	local Breath, SampleTime, FrameCount = 0, 0, 0
-	local FpsPulse = 0
 
 	local Scaler = New("UIScale", { Scale = 1 })
 	Island.ScaleMotor = Flipper.SingleMotor.new(1)
@@ -142,17 +144,134 @@ return function(Library, Parent)
 		ThemeTag = { BackgroundColor3 = "Accent" },
 	}, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 
+	local Viewport = New("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		ClipsDescendants = true,
+	})
+
 	Island.FpsLabel = New("TextLabel", {
 		Text = "-- fps",
-		FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
+		FontFace = TEXT_FONT,
 		TextSize = 11,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = UDim2.fromOffset(46, 20),
 		Position = UDim2.new(0, 136, 0.5, 0),
 		AnchorPoint = Vector2.new(0, 0.5),
 		BackgroundTransparency = 1,
+		TextTransparency = 1,
 		ThemeTag = { TextColor3 = "SubText" },
-	})
+	}, { Viewport })
+
+	-- Roblox has no text blur; offset translucent copies approximate the smear
+	-- while the two entries trade places.
+	local function makeEntry(Text)
+		local Entry = { Ghosts = {} }
+
+		for _, Offset in ipairs(GHOST_OFFSETS) do
+			local Ghost = New("TextLabel", {
+				Parent = Viewport,
+				Text = Text,
+				FontFace = TEXT_FONT,
+				TextSize = 11,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				BackgroundTransparency = 1,
+				ThemeTag = { TextColor3 = "SubText" },
+				Size = UDim2.fromScale(1, 1),
+				Visible = false,
+				TextTransparency = 1,
+			})
+			table.insert(Entry.Ghosts, { Label = Ghost, Offset = Offset })
+		end
+
+		Entry.Sharp = New("TextLabel", {
+			Parent = Viewport,
+			Text = Text,
+			FontFace = TEXT_FONT,
+			TextSize = 11,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BackgroundTransparency = 1,
+			ThemeTag = { TextColor3 = "SubText" },
+			Size = UDim2.fromScale(1, 1),
+		})
+
+		function Entry.SetText(NewText)
+			Entry.Sharp.Text = NewText
+			for _, Ghost in ipairs(Entry.Ghosts) do
+				Ghost.Label.Text = NewText
+			end
+		end
+
+		function Entry.Apply(Y, Blur)
+			Entry.Sharp.Position = UDim2.new(0, 0, 0, Y)
+			Entry.Sharp.TextTransparency = Blur * 0.18
+			for _, Ghost in ipairs(Entry.Ghosts) do
+				Ghost.Label.Position = UDim2.new(0, 0, 0, Y + Ghost.Offset * Blur)
+				Ghost.Label.TextTransparency = 1 - Blur * 0.42
+				Ghost.Label.Visible = Blur > 0.01
+			end
+		end
+
+		return Entry
+	end
+
+	local function destroyEntry(Entry)
+		if not Entry then
+			return
+		end
+		Entry.Sharp:Destroy()
+		for _, Ghost in ipairs(Entry.Ghosts) do
+			Ghost.Label:Destroy()
+		end
+	end
+
+	local CurrentEntry = makeEntry("-- fps")
+	CurrentEntry.Apply(0, 0)
+
+	Island.ScrollMotor = Flipper.SingleMotor.new(0)
+	local ScrollToken
+	local ScrollOut, ScrollIn
+
+	Island.ScrollMotor:onStep(function(Value)
+		if not ScrollToken then
+			return
+		end
+		local Blur = math.sin(Value * math.pi)
+		ScrollOut.Apply(-SCROLL_DISTANCE * Value, Blur)
+		ScrollIn.Apply(SCROLL_DISTANCE * (1 - Value), Blur)
+	end)
+
+	Island.ScrollMotor:onComplete(function()
+		if not ScrollToken then
+			return
+		end
+		ScrollToken = nil
+		local Outgoing, Incoming = ScrollOut, ScrollIn
+		ScrollOut, ScrollIn = nil, nil
+		destroyEntry(Outgoing)
+		CurrentEntry = Incoming
+		CurrentEntry.Apply(0, 0)
+	end)
+
+	local function startScroll(Text)
+		if ScrollOut then
+			destroyEntry(ScrollOut)
+			CurrentEntry = ScrollIn
+			CurrentEntry.Apply(0, 0)
+			ScrollOut, ScrollIn, ScrollToken = nil, nil, nil
+		end
+
+		-- Reset fires onStep and onComplete; the cleared token keeps them from
+		-- committing a scroll that has not started yet.
+		Island.ScrollMotor:setGoal(Instant(0))
+		Island.ScrollMotor:step(0)
+
+		local Incoming = makeEntry(Text)
+		Incoming.Apply(SCROLL_DISTANCE, 0)
+		ScrollOut, ScrollIn = CurrentEntry, Incoming
+		ScrollToken = {}
+		setGoal(Island.ScrollMotor, 1, SCROLL_FREQUENCY)
+	end
 
 	Island.Root = New("TextButton", {
 		Size = UDim2.fromOffset(PILL_WIDTH, PILL_HEIGHT),
@@ -300,16 +419,6 @@ return function(Library, Parent)
 		Island.Dot.BackgroundTransparency = Wave * 0.35
 		Island.DotGlow.BackgroundTransparency = 0.75 + Wave * 0.2
 
-		-- Text change feedback: a short alpha dip, not a scale or position
-		-- change. sin() peaks in the middle and lands back at 0 on both ends,
-		-- so the label never jumps when the number updates.
-		if FpsPulse > 0 then
-			FpsPulse = math.max(0, FpsPulse - Delta / FPS_TEXT_PULSE)
-			Island.FpsLabel.TextTransparency = math.sin(FpsPulse * math.pi) * 0.45
-		elseif Island.FpsLabel.TextTransparency ~= 0 then
-			Island.FpsLabel.TextTransparency = 0
-		end
-
 		-- Real frame rate: count actual Heartbeats over a 5s window instead
 		-- of reading GetRealPhysicsFPS(), which reports the target rate.
 		-- Display the real measured value; uncapped clients report high numbers.
@@ -318,8 +427,13 @@ return function(Library, Parent)
 		if SampleTime >= FPS_INTERVAL then
 			Island.RawFps = FrameCount / SampleTime
 			local Fps = math.max(1, math.floor(Island.RawFps + 0.5))
-			Island.FpsLabel.Text = tostring(Fps) .. " fps"
-			FpsPulse = 1
+			local Text = tostring(Fps) .. " fps"
+			Island.FpsLabel.Text = Text
+			if Library.ReducedMotion then
+				CurrentEntry.SetText(Text)
+			else
+				startScroll(Text)
+			end
 			task.defer(layout)
 			SampleTime, FrameCount = 0, 0
 		end
@@ -342,6 +456,7 @@ return function(Library, Parent)
 	function Island:Destroy()
 		Island.ScaleMotor:stop()
 		Island.LayoutMotor:stop()
+		Island.ScrollMotor:stop()
 		Island.Root:Destroy()
 	end
 
