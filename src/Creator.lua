@@ -7,6 +7,7 @@ local DEFAULT_FONT = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.F
 local Creator = {
 	Registry = {},
 	Signals = {},
+	ThemeCallbacks = {},
 	DefaultProperties = {
 		ScreenGui = {
 			ResetOnSpawn = false,
@@ -124,6 +125,7 @@ function Creator.Destroy()
 	Creator.Disconnect()
 
 	table.clear(Creator.Registry)
+	table.clear(Creator.ThemeCallbacks)
 end
 
 function Creator.GetThemeProperty(Property)
@@ -142,6 +144,13 @@ function Creator.UpdateTheme()
 			Instance[Property] = Creator.GetThemeProperty(ColorIdx)
 		end
 	end
+	for _, Callback in ipairs(Creator.ThemeCallbacks) do
+		Callback()
+	end
+end
+
+function Creator.AddThemeCallback(Callback)
+	Creator.ThemeCallbacks[#Creator.ThemeCallbacks + 1] = Callback
 end
 
 function Creator.AddThemeObject(Object, Properties)

@@ -32,6 +32,8 @@ local TabModule = {
 	TabCount = 0,
 }
 
+local refreshTabDisplay
+
 local function refreshSelector()
 	local Window = TabModule.Window
 	if not Window or not Window.SelectorPosMotor then
@@ -58,6 +60,8 @@ function TabModule:Init(Window)
 		Parent = Window.TabHolder,
 		ThemeTag = { TextColor3 = "SubText" },
 	})
+
+	Creator.AddThemeCallback(refreshTabDisplay)
 
 	return TabModule
 end
@@ -86,6 +90,66 @@ local function styleTab(Tab, Selected)
 	Tab.Label.FontFace = Selected and FONT_SEMIBOLD or FONT_REGULAR
 	Creator.OverrideTag(Tab.Label, { TextColor3 = Selected and "Text" or "SubText" })
 	Creator.OverrideTag(Tab.IconLabel, { ImageColor3 = Selected and "Text" or "SubText" })
+end
+
+local function escapeRichText(Text)
+	return (tostring(Text):gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
+end
+
+local function themeHex(Key)
+	local Color = Creator.GetThemeProperty(Key)
+	return string.format("#%02X%02X%02X",
+		math.floor(Color.R * 255 + 0.5),
+		math.floor(Color.G * 255 + 0.5),
+		math.floor(Color.B * 255 + 0.5))
+end
+
+local function breadcrumbWidth(Text)
+	return TextService:GetTextSize(Text, 28, Enum.Font.GothamMedium, Vector2.new(9999, 40)).X
+end
+
+local function fitBreadcrumbGroup(GroupName, ChildName, Available)
+	local Separator = " > "
+	local Budget = Available - breadcrumbWidth(ChildName) - breadcrumbWidth(Separator) - 4
+	if Budget <= 0 then
+		Budget = 24
+	end
+	if breadcrumbWidth(GroupName) <= Budget then
+		return GroupName
+	end
+	local Short = GroupName
+	while #Short > 1 and breadcrumbWidth(Short .. "...") > Budget do
+		Short = Short:sub(1, -2)
+	end
+	return Short .. "..."
+end
+
+refreshTabDisplay = function()
+	local Window = TabModule.Window
+	if not Window or not Window.TabDisplay then
+		return
+	end
+
+	local Target = TabModule.Tabs[TabModule.SelectedTab]
+	if not Target then
+		Window.TabDisplay.Text = "Tab"
+		return
+	end
+
+	if not Target.Group then
+		Window.TabDisplay.Text = escapeRichText(Target.Name)
+		return
+	end
+
+	local Group = TabModule.Groups[Target.Group]
+	local GroupName = Group and Group.Name or Target.Group
+	local Available = Window.Background.AbsoluteSize.X - Window.TabDisplay.Position.X.Offset - 16
+	if Available <= 0 then
+		Available = 400
+	end
+	GroupName = fitBreadcrumbGroup(GroupName, Target.Name, Available)
+	Window.TabDisplay.Text = string.format('<font color="%s">%s &gt; </font><font color="%s">%s</font>',
+		themeHex("SubText"), escapeRichText(GroupName), themeHex("Text"), escapeRichText(Target.Name))
 end
 
 local function layoutNav()
@@ -143,6 +207,7 @@ local function getGroup(Name, Icon)
 		Tabs = {},
 		Open = false,
 		ContentHeight = 0,
+		LastSelected = nil,
 	}
 
 	local HeaderLabel = New("TextLabel", {
@@ -239,9 +304,14 @@ function TabModule:OpenGroup(Name, Animated)
 	TabModule.OpenGroupName = Name
 	setGroupGoal(Group, 1, Animated)
 
-	if not WasOpen and Group.Tabs[1] then
-		-- Opening a group moves the selection to its first child.
-		self:SelectTab(Group.Tabs[1].Index)
+	if not WasOpen then
+		-- Reopening a group returns to the child last selected inside it.
+		local Last = Group.LastSelected
+		if Last and Last.Group == Name then
+			self:SelectTab(Last.Index)
+		elseif Group.Tabs[1] then
+			self:SelectTab(Group.Tabs[1].Index)
+		end
 	end
 end
 
@@ -450,6 +520,7 @@ function TabModule:SelectTab(Tab)
 
 	if Target.Group then
 		self:OpenGroup(Target.Group, true)
+		TabModule.Groups[Target.Group].LastSelected = Target
 	else
 		self:CloseGroups(true)
 	end
@@ -466,7 +537,7 @@ function TabModule:SelectTab(Tab)
 	styleTab(Target, true)
 
 	local Window = TabModule.Window
-	Window.TabDisplay.Text = Target.Name
+	refreshTabDisplay()
 	refreshSelector()
 
 	-- A new selection invalidates the in-flight switch so two threads never
