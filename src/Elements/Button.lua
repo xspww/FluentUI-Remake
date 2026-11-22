@@ -26,9 +26,15 @@ function Element:New(Config)
 		},
 	})
 
-	Creator.AddSignal(ButtonFrame.Frame.MouseButton1Click, function()
+	local ClickConnection = Creator.AddSignal(ButtonFrame.Frame.MouseButton1Click, function()
 		self.Library:SafeCallback(Config.Callback)
 	end)
+
+	local DestroyFrame = ButtonFrame.Destroy
+	function ButtonFrame:Destroy()
+		Creator.RemoveSignal(ClickConnection)
+		DestroyFrame(ButtonFrame)
+	end
 
 	return ButtonFrame
 end

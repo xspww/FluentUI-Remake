@@ -108,7 +108,7 @@ function Element:New(Idx, Config)
 		Library:UnlockInput(InputLock)
 	end
 
-	Creator.AddSignal(SliderDot.InputBegan, function(Input)
+	local InputBeganConnection = Creator.AddSignal(SliderDot.InputBegan, function(Input)
 		if
 			Input.UserInputType ~= Enum.UserInputType.MouseButton1
 			and Input.UserInputType ~= Enum.UserInputType.Touch
@@ -173,6 +173,7 @@ function Element:New(Idx, Config)
 	function Slider:Destroy()
 		StopDragging()
 
+		Creator.RemoveSignal(InputBeganConnection)
 		Creator.RemoveSignal(InputChangedConnection)
 		Creator.RemoveSignal(InputEndedConnection)
 

@@ -349,18 +349,25 @@ function Element:New(Idx, Config)
 		end
 
 		local function Display()
+			local Color = Color3.fromHSV(Hue, Sat, Vib)
+			local RGB = {
+				R = math.floor(Color.r * 255),
+				G = math.floor(Color.g * 255),
+				B = math.floor(Color.b * 255),
+			}
+
 			SatVibMap.BackgroundColor3 = Color3.fromHSV(Hue, 1, 1)
 			HueDrag.Position = UDim2.new(0, -1, Hue, -6)
 			SatCursor.Position = UDim2.new(Sat, 0, 1 - Vib, 0)
-			DialogDisplayFrame.BackgroundColor3 = Color3.fromHSV(Hue, Sat, Vib)
+			DialogDisplayFrame.BackgroundColor3 = Color
 
-			HexInput.Input.Text = "#" .. Color3.fromHSV(Hue, Sat, Vib):ToHex()
-			RedInput.Input.Text = GetRGB()["R"]
-			GreenInput.Input.Text = GetRGB()["G"]
-			BlueInput.Input.Text = GetRGB()["B"]
+			HexInput.Input.Text = "#" .. Color:ToHex()
+			RedInput.Input.Text = RGB["R"]
+			GreenInput.Input.Text = RGB["G"]
+			BlueInput.Input.Text = RGB["B"]
 
 			if Config.Transparency then
-				TransparencyColor.BackgroundColor3 = Color3.fromHSV(Hue, Sat, Vib)
+				TransparencyColor.BackgroundColor3 = Color
 				DialogDisplayFrame.BackgroundTransparency = Transparency
 				TransparencyDrag.Position = UDim2.new(0, -1, 1 - Transparency, -6)
 				AlphaInput.Input.Text = require(Root):Round((1 - Transparency) * 100, 0) .. "%"
@@ -555,7 +562,11 @@ function Element:New(Idx, Config)
 		Func(Colorpicker.Value)
 	end
 
+	local FrameConnection
+
 	function Colorpicker:Destroy()
+		Creator.RemoveSignal(FrameConnection)
+
 		if ActiveDialog then
 			local Dialog = ActiveDialog
 			ActiveDialog = nil
@@ -569,7 +580,7 @@ function Element:New(Idx, Config)
 		Library.Options[Idx] = nil
 	end
 
-	Creator.AddSignal(ColorpickerFrame.Frame.MouseButton1Click, function()
+	FrameConnection = Creator.AddSignal(ColorpickerFrame.Frame.MouseButton1Click, function()
 		CreateColorDialog()
 	end)
 

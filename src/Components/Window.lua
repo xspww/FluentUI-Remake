@@ -237,10 +237,19 @@ return function(Config)
 	Window.WidthMotor:onStep(applyMorph)
 	Window.HeightMotor:onStep(applyMorph)
 
-	-- Once folded, the window is invisible but still tracks the island every
-	-- frame, so a later island move cannot leave it stranded off-target.
-	Creator.AddSignal(RunService.RenderStepped, function()
-		if Window.Minimized then
+	-- Once folded, the window is invisible but still tracks the island so a
+	-- later island move cannot leave it stranded. Ten hertz suffices here; the
+	-- motor callbacks keep the morph animation smooth.
+	local MORPH_TRACK_INTERVAL = 0.1
+	local morphTrackTime = 0
+	Creator.AddSignal(RunService.RenderStepped, function(Delta)
+		if not Window.Minimized then
+			morphTrackTime = 0
+			return
+		end
+		morphTrackTime = morphTrackTime + Delta
+		if morphTrackTime >= MORPH_TRACK_INTERVAL then
+			morphTrackTime = 0
 			applyMorph()
 		end
 	end)

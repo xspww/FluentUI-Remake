@@ -74,6 +74,12 @@ local function ApplyCustomProps(Object, Props)
 	end
 end
 
+local function applyTheme(Object, Properties)
+	for Property, ColorIdx in next, Properties do
+		Object[Property] = Creator.GetThemeProperty(ColorIdx)
+	end
+end
+
 function Creator.AddSignal(Signal, Function)
 	if not Signal or not Function then
 		return
@@ -154,7 +160,7 @@ function Creator.AddThemeObject(Object, Properties)
 		Creator.Registry[Object] = nil
 	end)
 
-	Creator.UpdateTheme()
+	applyTheme(Object, Properties)
 	return Object
 end
 
@@ -165,7 +171,7 @@ function Creator.OverrideTag(Object, Properties)
 	end
 
 	Data.Properties = Properties
-	Creator.UpdateTheme()
+	applyTheme(Object, Properties)
 end
 
 function Creator.New(Name, Properties, Children)

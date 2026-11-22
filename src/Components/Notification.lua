@@ -171,7 +171,7 @@ function Notification:New(Config)
 		RootMotor:stop()
 	end)
 
-	Creator.AddSignal(NewNotification.CloseButton.MouseButton1Click, function()
+	local CloseConnection = Creator.AddSignal(NewNotification.CloseButton.MouseButton1Click, function()
 		NewNotification:Close()
 	end)
 
@@ -194,10 +194,15 @@ function Notification:New(Config)
 					Offset = Spring(60, { frequency = 5 }),
 				})
 				task.wait(0.4)
-				if NewNotification.Holder.Parent then
-					NewNotification.Holder:Destroy()
-				end
+				NewNotification:Destroy()
 			end)
+		end
+	end
+
+	function NewNotification:Destroy()
+		Creator.RemoveSignal(CloseConnection)
+		if NewNotification.Holder.Parent then
+			NewNotification.Holder:Destroy()
 		end
 	end
 

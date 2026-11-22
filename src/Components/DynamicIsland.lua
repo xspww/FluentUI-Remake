@@ -22,7 +22,7 @@ end
 local PILL_WIDTH = 190 -- pre-layout initial value; layout() sizes from content
 local PILL_HEIGHT = 34
 local PADDING, GAP = 10, 8
-local NAME_Y_OFFSET = -1 -- lift the semibold lowercase name to the FPS text's optical centre
+local NAME_Y_OFFSET = 1 -- drop the all-lowercase name to the FPS text's optical centre
 local PRESS_FREQUENCY = 14
 local RELEASE_FREQUENCY = 8
 local BREATH_HZ = 0.6
@@ -49,11 +49,13 @@ end
 
 local function hashString(Value)
 	local Hash = 2166136261
+	local Prime = 16777619
 	for Index = 1, #Value do
-		Hash = (Hash * 16777619) % 4294967296
-		Hash = (Hash + string.byte(Value, Index)) % 4294967296
+		local High = math.floor(Hash / 65536)
+		local Low = Hash % 65536
+		Hash = ((Low * Prime) % 4294967296 + ((High * Prime) % 65536) * 65536 + string.byte(Value, Index)) % 4294967296
 	end
-	return string.format("%x", math.floor(Hash))
+	return string.format("%08x", math.floor(Hash))
 end
 
 local function extensionFor(Url)
@@ -63,6 +65,10 @@ local function extensionFor(Url)
 	end
 	return ".png"
 end
+
+local AVATAR_MAX_BYTES = 1048576
+local avatarCache = {}
+local avatarInflight = {}
 
 -- Roblox ImageLabel cannot load an arbitrary http url. Real executors can
 -- fetch the bytes, write a workspace file and turn it into an rbxasset id.
@@ -77,21 +83,40 @@ local function resolveAvatar(Source)
 		return Source
 	end
 
-	local Ok, Asset = pcall(function()
+	local Cached = avatarCache[Source]
+	if Cached then
+		return Cached
+	end
+
+	if avatarInflight[Source] then
+		repeat
+			task.wait()
+		until not avatarInflight[Source]
+		return avatarCache[Source] or Source
+	end
+
+	avatarInflight[Source] = true
+
+	local Ok, Result = pcall(function()
+		local Path = "FluentIsland/avatar_" .. hashString(Source) .. extensionFor(Source)
+		if type(isfile) == "function" and isfile(Path) then
+			return getcustomasset(Path)
+		end
 		local Response = request({ Url = Source, Method = "GET" })
 		local Body = type(Response) == "table" and Response.Success and Response.Body or nil
-		if not Body or #Body == 0 then
+		if type(Body) ~= "string" or #Body == 0 or #Body > AVATAR_MAX_BYTES then
 			return nil
 		end
-		local Path = "FluentIsland/avatar_" .. hashString(Source) .. extensionFor(Source)
 		writefile(Path, Body)
 		return getcustomasset(Path)
 	end)
 
-	if Ok and type(Asset) == "string" then
-		return Asset
+	local Resolved = Ok and type(Result) == "string" and Result or nil
+	if Resolved then
+		avatarCache[Source] = Resolved
 	end
-	return Source
+	avatarInflight[Source] = nil
+	return Resolved or Source
 end
 
 return function(Library, Parent)
@@ -177,7 +202,7 @@ return function(Library, Parent)
 				TextSize = 11,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
-				ThemeTag = { TextColor3 = "SubText" },
+				TextColor3 = Creator.GetThemeProperty("SubText"),
 				Size = UDim2.fromScale(1, 1),
 				Visible = false,
 				TextTransparency = 1,
@@ -216,18 +241,11 @@ return function(Library, Parent)
 		return Entry
 	end
 
-	local function destroyEntry(Entry)
-		if not Entry then
-			return
-		end
-		Entry.Sharp:Destroy()
-		for _, Ghost in ipairs(Entry.Ghosts) do
-			Ghost.Label:Destroy()
-		end
-	end
-
-	local CurrentEntry = makeEntry("-- fps")
+	local EntryA = makeEntry("-- fps")
+	local EntryB = makeEntry("-- fps")
+	local CurrentEntry = EntryA
 	CurrentEntry.Apply(0, 0)
+	EntryB.Apply(-SCROLL_DISTANCE, 0)
 
 	Island.ScrollMotor = Flipper.SingleMotor.new(0)
 	local ScrollToken
@@ -247,16 +265,14 @@ return function(Library, Parent)
 			return
 		end
 		ScrollToken = nil
-		local Outgoing, Incoming = ScrollOut, ScrollIn
+		local Incoming = ScrollIn
 		ScrollOut, ScrollIn = nil, nil
-		destroyEntry(Outgoing)
 		CurrentEntry = Incoming
 		CurrentEntry.Apply(0, 0)
 	end)
 
 	local function startScroll(Text)
 		if ScrollOut then
-			destroyEntry(ScrollOut)
 			CurrentEntry = ScrollIn
 			CurrentEntry.Apply(0, 0)
 			ScrollOut, ScrollIn, ScrollToken = nil, nil, nil
@@ -267,7 +283,8 @@ return function(Library, Parent)
 		Island.ScrollMotor:setGoal(Instant(0))
 		Island.ScrollMotor:step(0)
 
-		local Incoming = makeEntry(Text)
+		local Incoming = CurrentEntry == EntryA and EntryB or EntryA
+		Incoming.SetText(Text)
 		Incoming.Apply(SCROLL_DISTANCE, 0)
 		ScrollOut, ScrollIn = CurrentEntry, Incoming
 		ScrollToken = {}
@@ -375,6 +392,8 @@ return function(Library, Parent)
 			return
 		end
 		self.AvatarSource = Image
+		self.AvatarGeneration = (self.AvatarGeneration or 0) + 1
+		local Generation = self.AvatarGeneration
 		if not Image:match("^https?://") then
 			self.Avatar.Image = Image
 			return
@@ -382,7 +401,7 @@ return function(Library, Parent)
 		-- Downloading yields, so resolve off the caller's thread.
 		task.spawn(function()
 			local Resolved = resolveAvatar(Image)
-			if Resolved and self.Avatar.Parent then
+			if Resolved and self.Avatar.Parent and self.AvatarGeneration == Generation then
 				self.Avatar.Image = Resolved
 			end
 		end)
@@ -396,16 +415,20 @@ return function(Library, Parent)
 		if type(Source) ~= "string" or not Source:match("^https?://") then
 			return
 		end
+		self.AvatarGeneration = (self.AvatarGeneration or 0) + 1
+		local Generation = self.AvatarGeneration
+		avatarCache[Source] = nil
 		task.spawn(function()
 			local Resolved = resolveAvatar(Source)
-			if Resolved and self.Avatar.Parent then
+			if Resolved and self.Avatar.Parent and self.AvatarGeneration == Generation then
 				self.Avatar.Image = Resolved
 			end
 		end)
 	end
 
+	local TeleportConnection
 	pcall(function()
-		Creator.AddSignal(Players.LocalPlayer.OnTeleport, function()
+		TeleportConnection = Creator.AddSignal(Players.LocalPlayer.OnTeleport, function()
 			pcall(function()
 				Island:RefreshAvatar()
 			end)
@@ -414,7 +437,7 @@ return function(Library, Parent)
 
 	-- Ambient breath: a gentle sine, not a spring, because nothing interrupts
 	-- it. Keep it subtle and slow so it reads as alive, not distracting.
-	Creator.AddSignal(RunService.Heartbeat, function(Delta)
+	local HeartbeatConnection = Creator.AddSignal(RunService.Heartbeat, function(Delta)
 		Breath = (Breath + Delta * BREATH_HZ) % 1
 		local Wave = (math.sin(Breath * math.pi * 2) + 1) / 2
 		Island.Dot.BackgroundTransparency = Wave * 0.35
@@ -440,7 +463,7 @@ return function(Library, Parent)
 		end
 	end)
 
-	Creator.AddSignal(Island.Root.MouseButton1Down, function()
+	local PressConnection = Creator.AddSignal(Island.Root.MouseButton1Down, function()
 		setGoal(Island.ScaleMotor, 0.94, PRESS_FREQUENCY)
 	end)
 
@@ -448,13 +471,18 @@ return function(Library, Parent)
 		setGoal(Island.ScaleMotor, 1, RELEASE_FREQUENCY)
 	end
 
-	Creator.AddSignal(Island.Root.MouseButton1Up, function()
+	local ReleaseConnection = Creator.AddSignal(Island.Root.MouseButton1Up, function()
 		release()
 		Window:Minimize(true, true)
 	end)
-	Creator.AddSignal(Island.Root.MouseLeave, release)
+	local LeaveConnection = Creator.AddSignal(Island.Root.MouseLeave, release)
 
 	function Island:Destroy()
+		Creator.RemoveSignal(TeleportConnection)
+		Creator.RemoveSignal(HeartbeatConnection)
+		Creator.RemoveSignal(PressConnection)
+		Creator.RemoveSignal(ReleaseConnection)
+		Creator.RemoveSignal(LeaveConnection)
 		Island.ScaleMotor:stop()
 		Island.LayoutMotor:stop()
 		Island.ScrollMotor:stop()

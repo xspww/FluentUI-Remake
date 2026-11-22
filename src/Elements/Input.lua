@@ -53,15 +53,17 @@ function Element:New(Idx, Config)
 		Library:SafeCallback(Input.Changed, Input.Value)
 	end
 
+	local Connection
+
 	if Input.Finished then
-		AddSignal(Box.FocusLost, function(enter)
+		Connection = AddSignal(Box.FocusLost, function(enter)
 			if not enter then
 				return
 			end
 			Input:SetValue(Box.Text)
 		end)
 	else
-		AddSignal(Box:GetPropertyChangedSignal("Text"), function()
+		Connection = AddSignal(Box:GetPropertyChangedSignal("Text"), function()
 			Input:SetValue(Box.Text)
 		end)
 	end
@@ -72,6 +74,7 @@ function Element:New(Idx, Config)
 	end
 
 	function Input:Destroy()
+		Creator.RemoveSignal(Connection)
 		InputFrame:Destroy()
 		Library.Options[Idx] = nil
 	end

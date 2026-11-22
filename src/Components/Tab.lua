@@ -68,6 +68,12 @@ function TabModule:Destroy()
 			Group.ExpandMotor:stop()
 		end
 	end
+
+	table.clear(TabModule.Tabs)
+	table.clear(TabModule.Containers)
+	table.clear(TabModule.Groups)
+	table.clear(TabModule.GroupOrder)
+	table.clear(TabModule.FlatTabs)
 end
 
 function TabModule:GetCurrentTabPos()
@@ -104,17 +110,16 @@ local function setGroupGoal(Group, Value, Animated)
 end
 
 local function fitTabLabel(Label, Text, AvailableWidth)
-	local function widthAt(Size)
-		return TextService:GetTextSize(Text, Size, Enum.Font.GothamMedium, Vector2.new(9999, 20)).X
+	local Font = Label.Font
+	if Font == Enum.Font.Unknown then
+		Font = Enum.Font.Gotham
 	end
 
-	local Size = TAB_TEXT_SIZE
-	while Size > MIN_TAB_TEXT_SIZE and widthAt(Size) > AvailableWidth do
-		Size -= 1
-	end
+	local FullWidth = TextService:GetTextSize(Text, TAB_TEXT_SIZE, Font, Vector2.new(9999, 20)).X
+	local Size = math.clamp(math.floor(TAB_TEXT_SIZE * AvailableWidth / math.max(FullWidth, 1)), MIN_TAB_TEXT_SIZE, TAB_TEXT_SIZE)
 
 	Label.TextSize = Size
-	Label.TextTruncate = widthAt(Size) > AvailableWidth
+	Label.TextTruncate = FullWidth * Size / TAB_TEXT_SIZE > AvailableWidth
 		and Enum.TextTruncate.AtEnd or Enum.TextTruncate.None
 end
 

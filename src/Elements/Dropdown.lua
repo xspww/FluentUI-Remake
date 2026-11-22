@@ -315,7 +315,7 @@ function Element:New(Idx, Config)
 		RecalculateListPosition()
 	end
 
-	Creator.AddSignal(SearchBox:GetPropertyChangedSignal("Text"), ApplySearch)
+	local SearchConnection = Creator.AddSignal(SearchBox:GetPropertyChangedSignal("Text"), ApplySearch)
 
 	RecalculateListPosition()
 	RecalculateListSize()
@@ -325,7 +325,7 @@ function Element:New(Idx, Config)
 		RecalculateListPosition
 	)
 
-	Creator.AddSignal(DropdownInner.MouseButton1Click, function()
+	local OpenConnection = Creator.AddSignal(DropdownInner.MouseButton1Click, function()
 		Dropdown:Open()
 	end)
 
@@ -687,7 +687,9 @@ function Element:New(Idx, Config)
 			end
 		end
 
-		Dropdown:BuildDropdownList()
+		for _, Data in ipairs(Dropdown.Order) do
+			Data:UpdateButton()
+		end
 		Dropdown:Display()
 
 		Library:SafeCallback(Dropdown.Callback, Dropdown.Value)
@@ -697,6 +699,8 @@ function Element:New(Idx, Config)
 	function Dropdown:Destroy()
 		Dropdown.Opened = false
 
+		Creator.RemoveSignal(SearchConnection)
+		Creator.RemoveSignal(OpenConnection)
 		Creator.RemoveSignal(ListPositionConnection)
 		Creator.RemoveSignal(OutsideClickConnection)
 		Creator.RemoveSignal(KeyConnection)
