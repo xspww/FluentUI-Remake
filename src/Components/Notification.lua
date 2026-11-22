@@ -5,7 +5,9 @@ local Creator = require(Root.Creator)
 local Spring = Flipper.Spring.new
 local New = Creator.New
 
-local Notification = {}
+local Notification = {
+	Active = {},
+}
 
 function Notification:Init(GUI)
 	Notification.Holder = New("Frame", {
@@ -175,6 +177,13 @@ function Notification:New(Config)
 		NewNotification:Close()
 	end)
 
+	function NewNotification:RemoveFromActive()
+		local Index = table.find(Notification.Active, NewNotification)
+		if Index then
+			table.remove(Notification.Active, Index)
+		end
+	end
+
 	function NewNotification:Open()
 		local ContentSize = NewNotification.LabelHolder.AbsoluteSize.Y
 		NewNotification.Holder.Size = UDim2.new(1, 0, 0, 58 + ContentSize)
@@ -188,6 +197,7 @@ function Notification:New(Config)
 	function NewNotification:Close()
 		if not NewNotification.Closed and NewNotification.Holder.Parent then
 			NewNotification.Closed = true
+			NewNotification:RemoveFromActive()
 			task.spawn(function()
 				RootMotor:setGoal({
 					Scale = Spring(1, { frequency = 5 }),
@@ -200,6 +210,11 @@ function Notification:New(Config)
 	end
 
 	function NewNotification:Destroy()
+		if NewNotification.Destroyed then
+			return
+		end
+		NewNotification.Destroyed = true
+		NewNotification:RemoveFromActive()
 		Creator.RemoveSignal(CloseConnection)
 		if NewNotification.Holder.Parent then
 			NewNotification.Holder:Destroy()
@@ -208,10 +223,33 @@ function Notification:New(Config)
 
 	NewNotification:Open()
 	if Config.Duration then
-		task.delay(Config.Duration, function()
+		NewNotification.DurationThread = task.delay(Config.Duration, function()
 			NewNotification:Close()
 		end)
 	end
+
+	table.insert(Notification.Active, NewNotification)
+
+	local MaxNotifications = Config.MaxNotifications
+	if type(MaxNotifications) ~= "number" then
+		MaxNotifications = 5
+	end
+
+	if MaxNotifications > 0 then
+		while #Notification.Active > MaxNotifications do
+			local Victim = Notification.Active[1]
+			if not Victim then
+				break
+			end
+			Victim.Closed = true
+			if Victim.DurationThread then
+				task.cancel(Victim.DurationThread)
+			end
+			Victim:RemoveFromActive()
+			Victim:Destroy()
+		end
+	end
+
 	return NewNotification
 end
 

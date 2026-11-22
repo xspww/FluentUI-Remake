@@ -77,6 +77,7 @@ local Library = {
 	LoadingToken = nil,
 	LoadingIsAuto = false,
 	ReducedMotion = false,
+	NotificationLimit = 5,
 
 	Theme = "Dark",
 	DialogOpen = false,
@@ -380,7 +381,11 @@ function Library:Destroy()
 end
 
 function Library:Notify(Config)
-	return NotificationModule:New(Config)
+	local Cloned = table.clone(Config or {})
+	if type(Cloned.MaxNotifications) ~= "number" then
+		Cloned.MaxNotifications = Library.NotificationLimit
+	end
+	return NotificationModule:New(Cloned)
 end
 
 -- The library is published as a global, so a script can reach it without
