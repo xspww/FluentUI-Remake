@@ -26,7 +26,7 @@ local SWEEP_WIDTH = 0.28 -- fraction of the track
 local CLOSED_SCALE = 0.97 -- never scale(0)
 local Z = 100 -- above the window and the island
 
-local FONT = "rbxassetid://12187365364"
+local FONT = "rbxasset://fonts/families/GothamSSm.json"
 
 local function clamp01(Value)
 	if Value ~= Value then

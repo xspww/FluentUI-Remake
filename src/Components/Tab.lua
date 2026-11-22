@@ -1,3 +1,5 @@
+local TextService = game:GetService("TextService")
+
 local Root = script.Parent.Parent
 local Flipper = require(Root.Packages.Flipper)
 local Creator = require(Root.Creator)
@@ -13,7 +15,9 @@ local FONT_SEMIBOLD = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.
 local TAB_HEIGHT = 34
 local CHILD_HEIGHT = 30
 local PADDING = 4
-local CHILD_INDENT = 22
+local CHILD_INDENT = 18
+local TAB_TEXT_SIZE = 12
+local MIN_TAB_TEXT_SIZE = 10
 
 local TabModule = {
 	Window = nil,
@@ -99,6 +103,21 @@ local function setGroupGoal(Group, Value, Animated)
 		or Instant(Value))
 end
 
+local function fitTabLabel(Label, Text, AvailableWidth)
+	local function widthAt(Size)
+		return TextService:GetTextSize(Text, Size, Enum.Font.GothamMedium, Vector2.new(9999, 20)).X
+	end
+
+	local Size = TAB_TEXT_SIZE
+	while Size > MIN_TAB_TEXT_SIZE and widthAt(Size) > AvailableWidth do
+		Size -= 1
+	end
+
+	Label.TextSize = Size
+	Label.TextTruncate = widthAt(Size) > AvailableWidth
+		and Enum.TextTruncate.AtEnd or Enum.TextTruncate.None
+end
+
 local function getGroup(Name, Icon)
 	if not Name then
 		return nil
@@ -121,6 +140,20 @@ local function getGroup(Name, Icon)
 		ContentHeight = 0,
 	}
 
+	local HeaderLabel = New("TextLabel", {
+		Name = "Label",
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 30, 0.5, 0),
+		Text = Name,
+		FontFace = FONT_SEMIBOLD,
+		TextSize = TAB_TEXT_SIZE,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(1, -36, 1, 0),
+		BackgroundTransparency = 1,
+		ThemeTag = { TextColor3 = "SubText" },
+	})
+	fitTabLabel(HeaderLabel, Name, (TabModule.Window.TabWidth or 160) - 36)
+
 	Group.Header = New("TextButton", {
 		Size = UDim2.new(1, 0, 0, TAB_HEIGHT),
 		BackgroundTransparency = 1,
@@ -138,18 +171,7 @@ local function getGroup(Name, Icon)
 			Image = Icon,
 			ThemeTag = { ImageColor3 = "SubText" },
 		}),
-		New("TextLabel", {
-			Name = "Label",
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 30, 0.5, 0),
-			Text = Name,
-			FontFace = FONT_SEMIBOLD,
-			TextSize = 12,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			Size = UDim2.new(1, -36, 1, 0),
-			BackgroundTransparency = 1,
-			ThemeTag = { TextColor3 = "SubText" },
-		}),
+		HeaderLabel,
 	})
 
 	-- The clipping frame owns the height; the CanvasGroup inside it owns alpha.
@@ -315,13 +337,16 @@ function TabModule:New(Title, Icon, Parent, GroupName, GroupIcon)
 		Text = Title,
 		RichText = true,
 		TextColor3 = Color3.fromRGB(140, 152, 172),
-		TextSize = 12,
+		TextSize = TAB_TEXT_SIZE,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		Size = UDim2.new(1, -36, 1, 0),
 		BackgroundTransparency = 1,
 		ThemeTag = { TextColor3 = "SubText" },
 	})
+
+	local LabelWidth = (Window.TabWidth or 160) - (Group and CHILD_INDENT * 2 or 0) - 36
+	fitTabLabel(Tab.Label, Title, LabelWidth)
 
 	Tab.IconLabel = New("ImageLabel", {
 		AnchorPoint = Vector2.new(0, 0.5),

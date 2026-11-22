@@ -22,6 +22,7 @@ end
 local PILL_WIDTH = 190 -- pre-layout initial value; layout() sizes from content
 local PILL_HEIGHT = 34
 local PADDING, GAP = 10, 8
+local NAME_Y_OFFSET = -1 -- lift the semibold lowercase name to the FPS text's optical centre
 local PRESS_FREQUENCY = 14
 local RELEASE_FREQUENCY = 8
 local BREATH_HZ = 0.6
@@ -29,7 +30,7 @@ local FPS_INTERVAL = 5
 local SCROLL_DISTANCE = 20
 local SCROLL_FREQUENCY = 5
 local GHOST_OFFSETS = { -2.5, -1, 1, 2.5 }
-local TEXT_FONT = Font.new("rbxassetid://12187365364", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+local TEXT_FONT = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
 
 local function setGoal(Motor, Value, Frequency)
 	Motor:setGoal(Spring(Value, { frequency = Frequency, dampingRatio = 1 }))
@@ -118,11 +119,11 @@ return function(Library, Parent)
 
 	Island.NameLabel = New("TextLabel", {
 		Text = "xspww",
-		FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+		FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
 		TextSize = 12,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Size = UDim2.fromOffset(76, 20),
-		Position = UDim2.new(0, 38, 0.5, 0),
+		Position = UDim2.new(0, 38, 0.5, NAME_Y_OFFSET),
 		AnchorPoint = Vector2.new(0, 0.5),
 		BackgroundTransparency = 1,
 		ThemeTag = { TextColor3 = "Text" },
@@ -323,8 +324,8 @@ return function(Library, Parent)
 
 		Island.FpsLabel.Size = UDim2.fromOffset(FpsWidth, 20)
 
-		local X = PADDING + 22 + GAP                 -- after avatar
-		Island.NameLabel.Position = UDim2.new(0, X, 0.5, 0)
+		local X = GAP + 22 + GAP                     -- avatar inset, then avatar, then gap
+		Island.NameLabel.Position = UDim2.new(0, X, 0.5, NAME_Y_OFFSET)
 		Island.NameLabel.AnchorPoint = Vector2.new(0, 0.5)
 		X = X + NameWidth + GAP
 

@@ -28,7 +28,7 @@ return function(Title, Parent)
 			RichText = true,
 			Text = Title,
 			TextTransparency = 0,
-			FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
+			FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
 			TextSize = 18,
 			TextXAlignment = "Left",
 			TextYAlignment = "Center",
