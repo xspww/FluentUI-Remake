@@ -333,9 +333,15 @@ return function(Library, Parent)
 	-- Horizontal layout is driven by the labels' own TextBounds so the pill
 	-- hugs its content. task.defer because TextBounds lags one frame after a
 	-- text change.
+	local CachedNameText, CachedNameWidth
 	local function layout()
-		local NameWidth = math.ceil(TextService:GetTextSize(
-			Island.NameLabel.Text, 12, Enum.Font.Gotham, Vector2.new(9999, 20)).X) + 4
+		local NameText = Island.NameLabel.Text
+		local NameWidth = CachedNameWidth
+		if NameWidth == nil or CachedNameText ~= NameText then
+			NameWidth = math.ceil(TextService:GetTextSize(
+				NameText, 12, Enum.Font.Gotham, Vector2.new(9999, 20)).X) + 4
+			CachedNameText, CachedNameWidth = NameText, NameWidth
+		end
 		local FpsWidth = math.ceil(TextService:GetTextSize(
 			Island.FpsLabel.Text, 11, Enum.Font.Gotham, Vector2.new(9999, 20)).X) + 2
 
@@ -500,7 +506,10 @@ return function(Library, Parent)
 		if SampleTime >= FPS_INTERVAL then
 			Island.RawFps = FrameCount / SampleTime
 			if TextOverride == nil then
-				showText(automaticText())
+				local Text = automaticText()
+				if Text ~= Island.FpsLabel.Text then
+					showText(Text)
+				end
 			end
 			SampleTime, FrameCount = 0, 0
 		end

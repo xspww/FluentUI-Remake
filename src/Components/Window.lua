@@ -206,7 +206,8 @@ return function(Config)
 	local function applyMorph()
 		local Width = Window.WidthMotor:getValue()
 		local Height = Window.HeightMotor:getValue()
-		local WidthProgress = math.clamp((Width - closedWidth()) / (OPEN_SIZE.X - closedWidth()), 0, 1)
+		local ClosedWidth = closedWidth()
+		local WidthProgress = math.clamp((Width - ClosedWidth) / (OPEN_SIZE.X - ClosedWidth), 0, 1)
 		local HeightProgress = math.clamp((Height - PILL_SIZE.Y) / (OPEN_SIZE.Y - PILL_SIZE.Y), 0, 1)
 
 		Window.Root.Size = UDim2.fromOffset(Width, Height)
@@ -331,10 +332,13 @@ return function(Config)
 		})
 	end
 
+	local ViewportConnection
 	local function watchCamera()
 		local Camera = Workspace.CurrentCamera
+		Creator.RemoveSignal(ViewportConnection)
+		ViewportConnection = nil
 		if Camera then
-			Creator.AddSignal(Camera:GetPropertyChangedSignal("ViewportSize"), ReclampToViewport)
+			ViewportConnection = Creator.AddSignal(Camera:GetPropertyChangedSignal("ViewportSize"), ReclampToViewport)
 		end
 	end
 

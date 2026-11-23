@@ -24,6 +24,12 @@ function Notification:Init(GUI)
 			Padding = UDim.new(0, 20),
 		}),
 	})
+
+	-- Library:Destroy calls Creator.Destroy before it destroys the GUI, which
+	-- disconnects tracked signals first. Connect directly so this still runs.
+	Notification.Holder.Destroying:Connect(function()
+		table.clear(Notification.Active)
+	end)
 end
 
 function Notification:New(Config)
