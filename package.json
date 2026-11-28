@@ -1,6 +1,6 @@
 {
   "name": "fluentlibrary",
-  "version": "1.1.0",
+  "version": "1.0.5",
   "description": "A remake of the Fluent Roblox UI library",
   "main": "init.lua",
   "scripts": {

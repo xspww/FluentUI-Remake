@@ -6,7 +6,6 @@ local Window = Fluent:CreateWindow({
     Title = "Fluent " .. Fluent.Version,
     SubTitle = "by dawid",
     TabWidth = 160,
-    Size = UDim2.fromOffset(635, 541),
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl -- Used when theres no MinimizeKeybind
 })
@@ -201,7 +200,7 @@ do
         end
     end)
 
-    Keybind:SetValue("MB2", "Toggle") -- Sets keybind to MB2, mode to Hold
+    Keybind:SetValue("MouseRight", "Toggle")
 
 
     local Input = Tabs.Main:AddInput("Input", {

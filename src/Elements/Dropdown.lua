@@ -63,7 +63,7 @@ function Element:New(Idx, Config)
 		Callback = Config.Callback or function() end,
 	}
 
-	local DropdownFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, false)
+	local DropdownFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, false, Element.__type)
 	DropdownFrame.DescLabel.Size = UDim2.new(1, -170, 0, 14)
 
 	Dropdown.SetTitle = DropdownFrame.SetTitle

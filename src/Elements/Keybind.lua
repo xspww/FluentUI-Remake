@@ -53,7 +53,7 @@ function Element:New(Idx, Config)
 	local ToggleConnection
 	local PickLock = "Keybind_" .. tostring(Idx)
 
-	local KeybindFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, true)
+	local KeybindFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, true, Element.__type)
 
 	Keybind.SetTitle = KeybindFrame.SetTitle
 	Keybind.SetDesc = KeybindFrame.SetDesc

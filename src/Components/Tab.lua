@@ -48,19 +48,6 @@ end
 function TabModule:Init(Window)
 	TabModule.Window = Window
 
-	TabModule.NoResults = New("TextLabel", {
-		Size = UDim2.new(1, -20, 0, 26),
-		Position = UDim2.fromOffset(10, 4),
-		BackgroundTransparency = 1,
-		Text = "No results",
-		TextSize = 12,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Visible = false,
-		LayoutOrder = -1,
-		Parent = Window.TabHolder,
-		ThemeTag = { TextColor3 = "SubText" },
-	})
-
 	Creator.AddThemeCallback(refreshTabDisplay)
 
 	return TabModule
@@ -122,6 +109,14 @@ local function fitBreadcrumbGroup(GroupName, ChildName, Available)
 		Short = Short:sub(1, -2)
 	end
 	return Short .. "..."
+end
+
+local function tabPath(Tab)
+	if not Tab.Group then
+		return Tab.Name
+	end
+	local Group = TabModule.Groups[Tab.Group]
+	return (Group and Group.Name or Tab.Group) .. " > " .. Tab.Name
 end
 
 refreshTabDisplay = function()
@@ -327,47 +322,90 @@ function TabModule:CloseGroups(Animated)
 	TabModule.OpenGroupName = nil
 end
 
-function TabModule:SetNavQuery(Query)
-	local Lower = string.lower(Query or "")
-	local Visible = 0
-
-	for _, Tab in ipairs(TabModule.FlatTabs) do
-		Tab.Frame.Visible = Lower == ""
-			or string.find(string.lower(Tab.Name), Lower, 1, true) ~= nil
-		if Tab.Frame.Visible then
-			Visible = Visible + 1
-		end
-	end
-
-	for Name, Group in pairs(TabModule.Groups) do
-		local HeaderMatch = Lower ~= ""
-			and string.find(string.lower(Name), Lower, 1, true) ~= nil
-		for _, Tab in ipairs(Group.Tabs) do
-			local Match = Lower == ""
-				or HeaderMatch
-				or string.find(string.lower(Tab.Name), Lower, 1, true) ~= nil
-			Tab.Frame.Visible = Match
-			if Match then
-				Visible = Visible + 1
-			end
-		end
-		local Show = Lower == "" or HeaderMatch
-		if not Show then
-			for _, Tab in ipairs(Group.Tabs) do
-				if Tab.Frame.Visible then
-					Show = true
-					break
+local function findElementLabels(Frame)
+	local Title, Description = "", ""
+	for _, Child in ipairs(Frame:GetChildren()) do
+		if Child.Name == "LabelHolder" then
+			for _, Label in ipairs(Child:GetChildren()) do
+				if Label.Name == "TitleLabel" then
+					Title = Label.Text
+				elseif Label.Name == "DescLabel" then
+					Description = Label.Text
 				end
 			end
 		end
-		Group.Header.Visible = Show
-		Group.Clips.Visible = Show
+	end
+	return Title, Description
+end
+
+local function contains(Text, Lower)
+	return Lower == "" or string.find(string.lower(Text or ""), Lower, 1, true) ~= nil
+end
+
+function TabModule:FindElementsByQuery(Query)
+	local Lower = string.lower(Query or "")
+	if Lower == "" then
+		return {}
 	end
 
-	TabModule.NoResults.Visible = Visible == 0
-	if TabModule.Window.Selector then
-		TabModule.Window.Selector.Visible = Visible > 0
+	local Results = {}
+	for _, Tab in ipairs(TabModule.Tabs) do
+		local Container = Tab.ContainerFrame
+		if Container then
+			for _, Frame in ipairs(Container:GetDescendants()) do
+				if Frame:GetAttribute("FluentElement") then
+					local Title, Description = findElementLabels(Frame)
+					if contains(Title, Lower) or contains(Description, Lower) then
+						Results[#Results + 1] = {
+							Tab = Tab,
+							Frame = Frame,
+							Title = Title,
+							Description = Description,
+							Path = tabPath(Tab),
+							Kind = Frame:GetAttribute("FluentElementType") or "",
+						}
+					end
+				end
+			end
+		end
 	end
+	return Results
+end
+
+function TabModule:RevealElement(Result)
+	if not Result then
+		return
+	end
+
+	self:SelectTab(Result.Tab.Index)
+
+	local Container, Frame = Result.Tab.ContainerFrame, Result.Frame
+	task.spawn(function()
+		local Deadline = tick() + 1.5
+		while tick() < Deadline and (not Container.Visible or not Frame:IsDescendantOf(Container)) do
+			task.wait(0.05)
+		end
+		if not Frame:IsDescendantOf(Container) then
+			return
+		end
+
+		local Offset = Frame.AbsolutePosition.Y - Container.AbsolutePosition.Y
+		Container.CanvasPosition = Vector2.new(0, math.max(0, Offset - 12))
+
+		local Stroke = Frame:FindFirstChildOfClass("UIStroke")
+		Creator.OverrideTag(Frame, { BackgroundColor3 = "Accent" })
+		if Stroke then
+			Creator.OverrideTag(Stroke, { Color = "Accent" })
+		end
+		task.delay(0.65, function()
+			if Frame.Parent then
+				Creator.OverrideTag(Frame, { BackgroundColor3 = "Element" })
+				if Stroke.Parent then
+					Creator.OverrideTag(Stroke, { Color = "ElementBorder" })
+				end
+			end
+		end)
+	end)
 end
 
 function TabModule:SetGroupOpen(Name, Open, Animated)

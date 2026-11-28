@@ -2,10 +2,11 @@ local Root = script.Parent.Parent
 local Creator = require(Root.Creator)
 local New = Creator.New
 
-return function(Title, Desc, Parent, _Hover)
+return function(Title, Desc, Parent, _Hover, Kind)
 	local Element = {}
 
 	Element.TitleLabel = New("TextLabel", {
+		Name = "TitleLabel",
 		FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
 		Text = Title,
 		TextColor3 = Color3.fromRGB(240, 240, 240),
@@ -20,6 +21,7 @@ return function(Title, Desc, Parent, _Hover)
 	})
 
 	Element.DescLabel = New("TextLabel", {
+		Name = "DescLabel",
 		FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json"),
 		Text = Desc,
 		TextColor3 = Color3.fromRGB(200, 200, 200),
@@ -36,6 +38,7 @@ return function(Title, Desc, Parent, _Hover)
 	})
 
 	Element.LabelHolder = New("Frame", {
+		Name = "LabelHolder",
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 1,
@@ -81,6 +84,13 @@ return function(Title, Desc, Parent, _Hover)
 		Element.Border,
 		Element.LabelHolder,
 	})
+
+	-- Marks the row so the title-bar search can read live titles and
+	-- descriptions instead of every element module registering itself.
+	Element.Frame:SetAttribute("FluentElement", true)
+	if Kind then
+		Element.Frame:SetAttribute("FluentElementType", Kind)
+	end
 
 	function Element:SetTitle(Set)
 		Element.TitleLabel.Text = Set

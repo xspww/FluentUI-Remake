@@ -152,42 +152,89 @@ Loading:Close() -- หรือ Fluent:HideLoading()
 
 ## API
 
-เรียกฟังก์ชันเหล่านี้จากไลบรารี
+แต่ละแถวระบุวัตถุที่เรียกใช้และเมธอดหนึ่งตัว ไลบรารีตั้ง `getgenv().Fluent` ให้เป็นตารางไลบรารี ฟิลด์สาธารณะมี `Version`, `Options`, `Themes`, `Theme`, `Unloaded`, `ReducedMotion`, `NotificationLimit`, `MinimizeKeybind` และ `DynamicIsland` `CreateWindow` สร้างหน้าต่างได้หนึ่งหน้าต่างต่อไลบรารีหนึ่งตัว `Config.Size` ไม่มีผล หน้าต่างมีขนาดคงที่ 635 คูณ 541 พิกเซล
 
-- `CreateWindow(Config)` สร้างหน้าต่าง ไลบรารีมีได้หนึ่งหน้าต่าง ตารางตั้งค่ารับ `Title`, `SubTitle`, `Theme`, `MinimizeKey`, `TabWidth`, `DynamicIsland`, `IslandName`, `IslandAvatar` และ `Loading` ขนาดหน้าต่างคงที่ที่ 635 คูณ 541
-- `SetTheme(Name)` เปลี่ยน theme ชื่อ theme อยู่ใน `Fluent.Themes` ไลบรารีไม่สนใจชื่อที่ไม่มีอยู่
-- `Notify(Config)` แสดงการแจ้งเตือน
-- `ShowLoading(Config)` แสดงหน้าจอโหลดกลางจอแล้วคืน handle ตารางตั้งค่ารับ `Title`, `Text`, `Progress`, `MinDuration`, `Timeout`, `Parent` และ `ReducedMotion` handle มี `SetProgress`, `SetIndeterminate`, `SetText`, `SetTitle`, `Close` และ `Destroy`
-- `HideLoading()` ปิดหน้าจอโหลด
-- `FinishLoading()` ปิดหน้าจอโหลดหลังเวลาแสดงขั้นต่ำ
-- `SetLoadingProgress(Value)` และ `SetLoadingText(Text)` อัปเดตหน้าจอโหลดที่เปิดอยู่
-- `GetIcon(Name)` คืน URL ของไอคอน Lucide
-- `Destroy()` ลบหน้าต่าง element และ signal
+### ไลบรารี
 
-เรียกฟังก์ชันเหล่านี้จากหน้าต่าง
+| เมธอด | สิ่งที่ทำ |
+| --- | --- |
+| `CreateWindow(Config)` | สร้างหน้าต่าง `Config` รับ `Title`, `SubTitle`, `Theme`, `MinimizeKey`, `TabWidth`, `DynamicIsland`, `IslandName`, `IslandAvatar` และ `Loading` |
+| `SetTheme(Name)` | เปลี่ยน theme ชื่อ theme อยู่ใน `Fluent.Themes` ชื่อที่ไม่มีอยู่จะไม่เปลี่ยน theme |
+| `Notify(Config)` | แสดงการแจ้งเตือนแล้วคืน handle `Config` รับ `Title`, `Content`, `SubContent`, `Duration` และ `MaxNotifications` |
+| `ShowLoading(Config)` | แสดงแผงโหลดแล้วคืน handle การเรียกครั้งที่สองอัปเดตแผงที่เปิดอยู่ `Config` รับ `Title`, `Text`, `Progress`, `MinDuration`, `Timeout`, `Parent`, `ReducedMotion` และ `Auto` |
+| `HideLoading()` | ปิดแผงที่เปิดอยู่ |
+| `FinishLoading()` | ปิดแผงที่เปิดอยู่หลังเวลาแสดงขั้นต่ำ |
+| `SetLoadingProgress(Value)` | อัปเดตแถบของแผงที่เปิดอยู่ |
+| `SetLoadingText(Text)` | อัปเดตข้อความของแผงที่เปิดอยู่ |
+| `GetIcon(Name)` | คืน URL ของไอคอน Lucide และคืน nil สำหรับชื่อที่ไม่มีอยู่ |
+| `Destroy()` | ลบหน้าต่าง element และ signal |
+| `LockInput(Name)` | เพิ่ม input lock ชื่อ `Name` ค่าเริ่มต้นคือ `default` |
+| `UnlockInput(Name)` | ลบ input lock ชื่อ `Name` |
+| `IsInputLocked()` | คืน true ถ้ามี input lock อย่างน้อยหนึ่งตัว |
+| `IsTyping()` | คืน true ถ้ามี text box ได้รับ focus |
+| `SafeCallback(Function, ...)` | เรียก callback และแสดงการแจ้งเตือนเมื่อเกิด error ไม่ทำอะไรขณะโหลด config |
+| `Round(Number, Factor)` | ปัดเลข `Factor` กำหนดจำนวนตำแหน่งทศนิยมและมีค่าเริ่มต้นเป็น 0 |
 
-- `AddTab(Config)` เพิ่มแท็บ ตารางตั้งค่ารับ `Title` และ `Icon` แท็บที่อยู่ในกลุ่มรับ `Group` และ `GroupIcon` เพิ่ม
-- `SelectTab(Index)` แสดงแท็บ
-- `SetGroupOpen(Name, Open, Animated)` เปิดหรือปิดกลุ่มของ navigation
-- `ToggleGroup(Name)` เปิดกลุ่มของ navigation
-- `SetNavQuery(Text)` กรองแถว sidebar ตามชื่อ ช่องค้นหาในแถบชื่อเรื่องเป็นตัวขับเคลื่อน
-- `Dialog(Config)` เปิดกล่องข้อความ
-- `Minimize()` ซ่อนหน้าต่าง การเปิดปิดด้วยแถบ island มีแอนิเมชัน ส่วน keybind เกิดขึ้นทันที
+### หน้าต่าง
 
-เรียกฟังก์ชันเหล่านี้จากแท็บหรือ section เพื่อเพิ่ม element element ส่วนใหญ่รับชื่อและตารางตั้งค่า
+| เมธอด | สิ่งที่ทำ |
+| --- | --- |
+| `AddTab(Config)` | เพิ่มแท็บ `Config` รับ `Title` และ `Icon` แท็บที่อยู่ในกลุ่มรับ `Group` และ `GroupIcon` เพิ่ม |
+| `SelectTab(Index)` | เลือกแท็บตาม index ที่เป็นตัวเลข |
+| `SetGroupOpen(Name, Open, Animated)` | เปิดหรือปิดกลุ่มของ navigation |
+| `ToggleGroup(Name)` | เปิดกลุ่มของ navigation |
+| `SetSearchQuery(Query)` | ค้นหา element จากชื่อและคำอธิบาย แล้วแสดงผลลัพธ์ใต้แถบชื่อเรื่อง |
+| `SetNavQuery(Query)` | เรียก `SetSearchQuery` สคริปต์เดิมยังใช้ชื่อนี้ได้ |
+| `FindElements(Query)` | คืนตารางผลลัพธ์ของ element ที่ตรงกับคำค้นหา |
+| `RevealElement(Result)` | เลือกแท็บของผลลัพธ์แล้วเลื่อนไปที่ element |
+| `Dialog(Config)` | เปิดกล่องข้อความ |
+| `Minimize(Silent, Animated)` | สลับหน้าต่างระหว่างขนาดเปิดกับแถบ island `Silent` ปิดการแจ้งเตือนที่บอกวิธีเปิด `Animated` ใช้สปริง |
+| `SetHidden(Hidden)` | ซ่อนหรือแสดงหน้าต่างโดยไม่เปลี่ยนสถานะ minimize |
+| `Destroy()` | ลบหน้าต่างและ signal |
 
-- `AddButton(Config)`
-- `AddParagraph(Config)`
-- `AddToggle(Name, Config)`
-- `AddSlider(Name, Config)`
-- `AddDropdown(Name, Config)`
-- `AddColorpicker(Name, Config)`
-- `AddKeybind(Name, Config)`
-- `AddInput(Name, Config)`
+`SetGroupOpen` ไม่เปลี่ยนหน้าเนื้อหา `ToggleGroup` เปิดกลุ่มอย่างเดียว
 
-element ส่วนใหญ่มี `SetValue`, `OnChanged` และ `Destroy` dropdown มี `SetValues` และ `GetActiveValues` เพิ่ม ส่วน keybind มี `GetState` เพิ่ม
+### แท็บและ section
 
-dropdown มีช่องค้นหาด้านบนของรายการ พิมพ์เพื่อกรองตัวเลือก กด `Enter` เพื่อเลือกผลลัพธ์แรก กด `Esc` เพื่อปิดรายการ ใช้ได้ทั้งแบบเลือกเดี่ยวและเลือกหลายตัว ถ้าไม่มีตัวเลือกตรงกัน รายการจะแสดง `No results`
+| เมธอด | สิ่งที่ทำ |
+| --- | --- |
+| `AddSection(SectionTitle)` | เพิ่ม section ให้แท็บแล้วคืน section นั้น |
+| `AddButton(Config)` | เพิ่ม button |
+| `AddParagraph(Config)` | เพิ่ม paragraph |
+| `AddToggle(Name, Config)` | เพิ่ม toggle |
+| `AddSlider(Name, Config)` | เพิ่ม slider |
+| `AddDropdown(Name, Config)` | เพิ่ม dropdown |
+| `AddColorpicker(Name, Config)` | เพิ่ม colorpicker |
+| `AddKeybind(Name, Config)` | เพิ่ม keybind |
+| `AddInput(Name, Config)` | เพิ่ม input |
+
+`AddButton` และ `AddParagraph` รับเฉพาะ `Config` เพราะไม่มี key สำหรับเก็บชื่อ ส่วนอีกหกตัวรับ `Name` แล้วเก็บ element ไว้ใน `Fluent.Options` ภายใต้ชื่อนั้น แท็บและ section รับ constructor ทั้งแปดตัวเหมือนกัน
+
+### Element
+
+`Button` และ `Paragraph` มี `SetTitle`, `SetDesc` และ `Destroy` `Toggle`, `Slider`, `Dropdown`, `Colorpicker`, `Keybind` และ `Input` มี `SetValue`, `OnChanged` และ `Destroy` element ทุกตัวมี `SetTitle` และ `SetDesc` `OnChanged` ทำงานทันทีด้วยค่าปัจจุบัน
+
+| เมธอด | ใช้กับ | สิ่งที่ทำ |
+| --- | --- | --- |
+| `SetTitle(Text)` | element ทุกตัว | เปลี่ยนข้อความชื่อ |
+| `SetDesc(Text)` | element ทุกตัว | เปลี่ยนข้อความคำอธิบาย ข้อความว่างจะซ่อนป้ายนั้น |
+| `Destroy()` | element ทุกตัว | ลบ element |
+| `SetValue(Value)` | Toggle, Slider, Dropdown, Colorpicker, Keybind, Input | ตั้งค่า |
+| `OnChanged(Callback)` | Toggle, Slider, Dropdown, Colorpicker, Keybind, Input | ลงทะเบียน callback สำหรับการเปลี่ยนค่า |
+| `SetValue(HSV, Transparency)` | Colorpicker | รับตาราง hue, saturation และ value |
+| `SetValueRGB(Color, Transparency)` | Colorpicker | รับ Color3 |
+| `Open()` | Dropdown | เปิดรายการตัวเลือก |
+| `Close()` | Dropdown | ปิดรายการตัวเลือก |
+| `Display()` | Dropdown | รีเฟรชตัวเลือกที่แสดง |
+| `BuildDropdownList()` | Dropdown | สร้างปุ่มตัวเลือกใหม่ |
+| `SetValues(Values)` | Dropdown | แทนที่ตัวเลือก |
+| `GetActiveValues()` | Dropdown | คืนตารางเมื่อ `Multi` เป็น true และคืน 1 หรือ 0 สำหรับการเลือกเดี่ยว |
+| `SetValue(Key, Mode)` | Keybind | ตั้งปุ่มและโหมด |
+| `OnClick(Callback)` | Keybind | ลงทะเบียน callback สำหรับการคลิก |
+| `DoClick()` | Keybind | เรียก callback ของค่าและ callback ของการคลิก |
+| `GetState()` | Keybind | คืนสถานะปัจจุบัน |
+
+`Input` รับ `Numeric`, `Finished`, `Placeholder` และ `MaxLength` `Numeric` รับเฉพาะตัวเลข `Finished` เรียก callback ตอนกด Enter `Placeholder` ตั้งข้อความตัวอย่าง `MaxLength` ตัดข้อความให้สั้นลง `Dropdown` รับ `AllowNull` และ `AllowNull` ให้ลบตัวเลือกสุดท้ายได้
 
 dropdown ที่ตั้ง `Multi = true` รับตาราง คุณส่ง map array หรือค่าเดียวก็ได้
 
@@ -197,9 +244,63 @@ Dropdown:SetValue({ "two", "three" })
 Dropdown:SetValue("two")
 ```
 
+dropdown มีช่องค้นหาด้านบนของรายการ กด `Enter` เพื่อเลือกผลลัพธ์แรก กด `Esc` เพื่อปิดรายการ รายการจะแสดง `No results` เมื่อไม่มีตัวเลือกตรงกัน
+
+### handle ของการโหลด
+
+`ShowLoading` คืน handle นี้ ไลบรารีอ่าน `ReducedMotion` ตอนสร้างแผง
+
+| เมธอด | สิ่งที่ทำ |
+| --- | --- |
+| `SetProgress(Value)` | เคลื่อนแถบจาก 0 ถึง 1 |
+| `SetIndeterminate(Value)` | เปลี่ยนเป็นแถบเคลื่อนที่ |
+| `SetText(Text)` | เปลี่ยนข้อความเนื้อหา |
+| `SetTitle(Text)` | เปลี่ยนชื่อเรื่อง |
+| `Close()` | เฟดออกแล้วลบแผง |
+| `Destroy()` | ลบแผงทันที |
+| `GetProgress()` | คืนความคืบหน้าปัจจุบัน |
+| `GetMinDuration()` | คืนเวลาแสดงขั้นต่ำ |
+| `GetElapsed()` | คืนจำนวนวินาทีตั้งแต่สร้างแผง |
+
+### Dynamic Island
+
+| เมธอด | สิ่งที่ทำ |
+| --- | --- |
+| `SetName(Name)` | เปลี่ยนชื่อ |
+| `SetAvatar(Image)` | รับรหัส `rbxassetid://` หรือ URL แบบ `http(s)://` |
+| `SetText(Text)` | ล็อกข้อความที่แสดง `nil` กลับไปแสดงอัตราเฟรม |
+| `SetFpsFormat(Format)` | ปรับรูปแบบข้อความอัตโนมัติด้วยค่าดิบและค่าที่ปัดแล้ว `nil` กลับไปใช้รูปแบบเดิม |
+| `SetStat(Text)` | เรียก `SetText` |
+| `ResetStat()` | เรียก `SetText(nil)` |
+| `RefreshAvatar()` | โหลด URL รูปโปรไฟล์ใหม่ |
+| `Destroy()` | ลบแถบ island และ signal |
+
+`SetText`, `SetFpsFormat`, `SetStat` และ `ResetStat` คืน island เพื่อใช้ต่อเป็นโซ่ได้
+
+### การแจ้งเตือน
+
+`Notify` คืน handle ที่มี `Open`, `Close`, `Destroy` และ `RemoveFromActive` `Open` ทำให้การแจ้งเตือนเคลื่อนเข้ามา `Close` เคลื่อนออกแล้วลบการแจ้งเตือน `Destroy` ลบทันที `RemoveFromActive` เอาการแจ้งเตือนออกจากรายการที่ทำงานอยู่
+
 ## Addon
 
 addon เขียนการตั้งค่าลงไฟล์ของ executor addon แต่ละตัวต้องได้ไลบรารีก่อน `BuildConfigSection` และ `BuildInterfaceSection` รับแท็บหนึ่งตัวแล้วเพิ่ม section ให้แท็บนั้น
+
+| วัตถุที่เรียก | เมธอด | สิ่งที่ทำ |
+| --- | --- | --- |
+| ทั้งสองตัว | `SetLibrary(Library)` | ส่งไลบรารีให้ addon |
+| ทั้งสองตัว | `BuildFolderTree()` | สร้างโฟลเดอร์สำหรับการตั้งค่า |
+| SaveManager | `BuildConfigSection(Tab)` | เพิ่ม section ของ config ให้แท็บ |
+| InterfaceManager | `BuildInterfaceSection(Tab)` | เพิ่ม section ของ interface ให้แท็บ |
+| SaveManager | `SetFolder(Folder)` | ตั้งโฟลเดอร์หลัก |
+| SaveManager | `SetIgnoreIndexes(List)` | ข้าม key ของ element ที่ระบุตอนบันทึก |
+| SaveManager | `IgnoreThemeSettings()` | ข้าม `InterfaceTheme` และ `MenuKeybind` |
+| SaveManager | `Save(Name)` | เขียนไฟล์ config |
+| SaveManager | `Load(Name)` | อ่านไฟล์ config |
+| SaveManager | `RefreshConfigList()` | คืนชื่อไฟล์ config ทั้งหมด |
+| SaveManager | `LoadAutoloadConfig()` | โหลด config ที่ระบุไว้ใน `autoload.txt` |
+| InterfaceManager | `SetFolder(Folder)` | ตั้งโฟลเดอร์หลัก |
+| InterfaceManager | `SaveSettings()` | เขียน `options.json` |
+| InterfaceManager | `LoadSettings()` | อ่าน `options.json` |
 
 ```lua
 SaveManager:SetLibrary(Fluent)
@@ -213,38 +314,25 @@ InterfaceManager:BuildInterfaceSection(Tab)
 
 save manager เก็บไฟล์ทั้งหมดไว้ใต้โฟลเดอร์เดียว interface manager เก็บ theme และปุ่มย่อหน้าต่าง
 
-## สร้างและทดสอบ
+## สร้างและตรวจสอบ
 
-ติดตั้งเครื่องมือแล้วสร้างไฟล์
+ติดตั้งเครื่องมือด้วย `aftman install` Aftman ติดตั้ง Rojo, Darklua, Lune และ Selene และ `pnpm` ไม่ได้อยู่ใน `PATH`
 
-```bash
-aftman install
-pnpm install
-pnpm run bundle
+รัน spec, linter และ build จาก PowerShell
+
+```powershell
+$env:PATH = "$env:USERPROFILE\.aftman\bin;$env:PATH"
+lune.exe run spec/run.luau
+selene.exe src --config selene.toml
+lune.exe run build/init
 ```
 
-Aftman ติดตั้ง Rojo, Darklua, Lune และ Selene ให้แน่ใจว่า `~/.aftman/bin` อยู่ใน `PATH`
+spec ใช้ฟังก์ชัน `describe`, `it` และ `expect` แบบเดียวกับการทดสอบของ Flipper จึงรันใน Roblox Studio ได้ด้วย
 
 build เขียนไฟล์สองไฟล์ลงโฟลเดอร์ `dist`
 
 - `dist/main.rbxm` คือ place model เปิดใน Studio
 - `dist/main.lua` คือสคริปต์ที่รวมแล้ว โหลดด้วย `loadstring`
-
-ถ้าต้องการเฉพาะ place model ให้รัน `pnpm run rojo`
-
-spec อยู่ในโฟลเดอร์ `spec` รันด้วย Lune
-
-```bash
-pnpm run test
-```
-
-spec ใช้ฟังก์ชัน `describe`, `it` และ `expect` แบบเดียวกับการทดสอบของ Flipper จึงรันใน Roblox Studio ได้ด้วย
-
-รัน linter ด้วย Selene
-
-```bash
-pnpm run lint
-```
 
 ## เครดิต
 

@@ -152,42 +152,89 @@ The animation uses critically damped springs. It starts at scale 0.97, not at ze
 
 ## API
 
-Call these functions on the library.
+Each row names one receiver and one method. The library sets `getgenv().Fluent` to the library table. Public fields include `Version`, `Options`, `Themes`, `Theme`, `Unloaded`, `ReducedMotion`, `NotificationLimit`, `MinimizeKeybind` and `DynamicIsland`. `CreateWindow` accepts one window per library instance. `Config.Size` has no effect. The window is fixed at 635 by 541 pixels.
 
-- `CreateWindow(Config)` creates the window. The library holds one window. The configuration table takes `Title`, `SubTitle`, `Theme`, `MinimizeKey`, `TabWidth`, `DynamicIsland`, `IslandName`, `IslandAvatar` and `Loading`. The window size is fixed at 635 by 541.
-- `SetTheme(Name)` changes the theme. The theme names are in `Fluent.Themes`. The library ignores an unknown name.
-- `Notify(Config)` shows a notification.
-- `ShowLoading(Config)` shows the centered loading overlay and returns a handle. The configuration table takes `Title`, `Text`, `Progress`, `MinDuration`, `Timeout`, `Parent` and `ReducedMotion`. The handle has `SetProgress`, `SetIndeterminate`, `SetText`, `SetTitle`, `Close` and `Destroy`.
-- `HideLoading()` closes the overlay.
-- `FinishLoading()` closes the overlay after its minimum display time.
-- `SetLoadingProgress(Value)` and `SetLoadingText(Text)` update the live overlay.
-- `GetIcon(Name)` returns the URL of a Lucide icon.
-- `Destroy()` removes the window, the elements and the signals.
+### Library
 
-Call these functions on a window.
+| Method | Behavior |
+| --- | --- |
+| `CreateWindow(Config)` | Creates the window. `Config` takes `Title`, `SubTitle`, `Theme`, `MinimizeKey`, `TabWidth`, `DynamicIsland`, `IslandName`, `IslandAvatar` and `Loading`. |
+| `SetTheme(Name)` | Changes the theme. Names are in `Fluent.Themes`. An unknown name leaves the theme unchanged. |
+| `Notify(Config)` | Shows a notification and returns a handle. `Config` takes `Title`, `Content`, `SubContent`, `Duration` and `MaxNotifications`. |
+| `ShowLoading(Config)` | Shows the loading panel and returns a handle. A second call updates the open panel. `Config` takes `Title`, `Text`, `Progress`, `MinDuration`, `Timeout`, `Parent`, `ReducedMotion` and `Auto`. |
+| `HideLoading()` | Closes the open panel. |
+| `FinishLoading()` | Closes the open panel after its minimum display time. |
+| `SetLoadingProgress(Value)` | Updates the bar of the open panel. |
+| `SetLoadingText(Text)` | Updates the text of the open panel. |
+| `GetIcon(Name)` | Returns the URL of a Lucide icon. It returns nil for an unknown name. |
+| `Destroy()` | Removes the window, the elements and the signals. |
+| `LockInput(Name)` | Adds a named input lock. `Name` defaults to `default`. |
+| `UnlockInput(Name)` | Removes the named input lock. |
+| `IsInputLocked()` | Returns true when any input lock is set. |
+| `IsTyping()` | Returns true when a text box has focus. |
+| `SafeCallback(Function, ...)` | Calls a callback and shows a notification when it raises an error. It does nothing while a config is loading. |
+| `Round(Number, Factor)` | Rounds a number. `Factor` sets the decimal places and defaults to 0. |
 
-- `AddTab(Config)` adds a tab. The configuration table takes `Title` and `Icon`. A grouped tab also takes `Group` and `GroupIcon`.
-- `SelectTab(Index)` shows a tab.
-- `SetGroupOpen(Name, Open, Animated)` opens or closes a navigation group.
-- `ToggleGroup(Name)` opens a navigation group.
-- `SetNavQuery(Text)` filters the sidebar rows by title. The search field in the title bar drives it.
-- `Dialog(Config)` opens a dialog.
-- `Minimize()` hides the window. The island toggle is animated. The keybind is instant.
+### Window
 
-Call these functions on a tab or on a section to add an element. Most elements take a name and a settings table.
+| Method | Behavior |
+| --- | --- |
+| `AddTab(Config)` | Adds a tab. `Config` takes `Title` and `Icon`. A grouped tab also takes `Group` and `GroupIcon`. |
+| `SelectTab(Index)` | Selects the tab with that numeric index. |
+| `SetGroupOpen(Name, Open, Animated)` | Opens or closes a navigation group. |
+| `ToggleGroup(Name)` | Opens a navigation group. |
+| `SetSearchQuery(Query)` | Finds elements by title and description and shows the matches under the title bar. |
+| `SetNavQuery(Query)` | Calls `SetSearchQuery`. Existing scripts can keep this name. |
+| `FindElements(Query)` | Returns result tables for the elements that match the query. |
+| `RevealElement(Result)` | Selects the tab of a result and scrolls to the element. |
+| `Dialog(Config)` | Opens a dialog. |
+| `Minimize(Silent, Animated)` | Toggles the window between the open size and the island pill. `Silent` suppresses the hint notification. `Animated` uses springs. |
+| `SetHidden(Hidden)` | Hides or shows the window without changing the minimized state. |
+| `Destroy()` | Removes the window and its signals. |
 
-- `AddButton(Config)`
-- `AddParagraph(Config)`
-- `AddToggle(Name, Config)`
-- `AddSlider(Name, Config)`
-- `AddDropdown(Name, Config)`
-- `AddColorpicker(Name, Config)`
-- `AddKeybind(Name, Config)`
-- `AddInput(Name, Config)`
+`SetGroupOpen` does not change the page. `ToggleGroup` only opens a group.
 
-Most elements have `SetValue`, `OnChanged` and `Destroy`. A dropdown also has `SetValues` and `GetActiveValues`. A keybind also has `GetState`.
+### Tab and section
 
-A dropdown has a search field at the top of its list. Type to filter the options. `Enter` selects the first match. `Esc` closes the list. This works for single select and for multi select. When nothing matches, the list shows `No results`.
+| Method | Behavior |
+| --- | --- |
+| `AddSection(SectionTitle)` | Adds a section to a tab and returns it. |
+| `AddButton(Config)` | Adds a button. |
+| `AddParagraph(Config)` | Adds a paragraph. |
+| `AddToggle(Name, Config)` | Adds a toggle. |
+| `AddSlider(Name, Config)` | Adds a slider. |
+| `AddDropdown(Name, Config)` | Adds a dropdown. |
+| `AddColorpicker(Name, Config)` | Adds a colorpicker. |
+| `AddKeybind(Name, Config)` | Adds a keybind. |
+| `AddInput(Name, Config)` | Adds an input. |
+
+`AddButton` and `AddParagraph` take only `Config` because they have no name key. The other six take `Name` and store the element in `Fluent.Options` under that name. A tab and a section accept the same eight constructors.
+
+### Elements
+
+`Button` and `Paragraph` have `SetTitle`, `SetDesc` and `Destroy`. `Toggle`, `Slider`, `Dropdown`, `Colorpicker`, `Keybind` and `Input` have `SetValue`, `OnChanged` and `Destroy`. All elements have `SetTitle` and `SetDesc`. `OnChanged` fires immediately with the current value.
+
+| Method | Receiver | Behavior |
+| --- | --- | --- |
+| `SetTitle(Text)` | All elements | Changes the title label. |
+| `SetDesc(Text)` | All elements | Changes the description label. An empty string hides it. |
+| `Destroy()` | All elements | Removes the element. |
+| `SetValue(Value)` | Toggle, Slider, Dropdown, Colorpicker, Keybind, Input | Sets the value. |
+| `OnChanged(Callback)` | Toggle, Slider, Dropdown, Colorpicker, Keybind, Input | Registers a callback for value changes. |
+| `SetValue(HSV, Transparency)` | Colorpicker | Takes an array of hue, saturation and value. |
+| `SetValueRGB(Color, Transparency)` | Colorpicker | Takes a Color3. |
+| `Open()` | Dropdown | Opens the option list. |
+| `Close()` | Dropdown | Closes the option list. |
+| `Display()` | Dropdown | Refreshes the displayed selection. |
+| `BuildDropdownList()` | Dropdown | Rebuilds the option buttons. |
+| `SetValues(Values)` | Dropdown | Replaces the options. |
+| `GetActiveValues()` | Dropdown | Returns an array when `Multi` is true. It returns 1 or 0 for single select. |
+| `SetValue(Key, Mode)` | Keybind | Sets the key and the mode. |
+| `OnClick(Callback)` | Keybind | Registers the click callback. |
+| `DoClick()` | Keybind | Fires the callback and the click callback. |
+| `GetState()` | Keybind | Returns the current state. |
+
+`Input` takes `Numeric`, `Finished`, `Placeholder` and `MaxLength`. `Numeric` accepts numbers only. `Finished` fires the callback on Enter. `Placeholder` sets the placeholder text. `MaxLength` truncates the text. `Dropdown` takes `AllowNull`. `AllowNull` lets the last selected option be cleared.
 
 A dropdown with `Multi = true` takes a table. You can pass a map, an array or one value.
 
@@ -197,9 +244,63 @@ Dropdown:SetValue({ "two", "three" })
 Dropdown:SetValue("two")
 ```
 
+A dropdown has a search field at the top of its list. `Enter` selects the first match. `Esc` closes the list. The list shows `No results` when nothing matches.
+
+### Loading handle
+
+`ShowLoading` returns this handle. The library reads `ReducedMotion` when it creates the panel.
+
+| Method | Behavior |
+| --- | --- |
+| `SetProgress(Value)` | Moves the bar from 0 to 1. |
+| `SetIndeterminate(Value)` | Switches to the linear sweep. |
+| `SetText(Text)` | Changes the body text. |
+| `SetTitle(Text)` | Changes the title. |
+| `Close()` | Fades out and removes the panel. |
+| `Destroy()` | Removes the panel at once. |
+| `GetProgress()` | Returns the current progress. |
+| `GetMinDuration()` | Returns the minimum display time. |
+| `GetElapsed()` | Returns the seconds since the panel was created. |
+
+### Dynamic island
+
+| Method | Behavior |
+| --- | --- |
+| `SetName(Name)` | Changes the name. |
+| `SetAvatar(Image)` | Accepts an `rbxassetid://` id or an `http(s)://` URL. |
+| `SetText(Text)` | Pins the readout text. `nil` resumes the frame rate. |
+| `SetFpsFormat(Format)` | Shapes the automatic text with the raw and rounded values. `nil` restores the default. |
+| `SetStat(Text)` | Calls `SetText`. |
+| `ResetStat()` | Calls `SetText(nil)`. |
+| `RefreshAvatar()` | Resolves the avatar URL again. |
+| `Destroy()` | Removes the island and its signals. |
+
+`SetText`, `SetFpsFormat`, `SetStat` and `ResetStat` return the island for chaining.
+
+### Notification
+
+`Notify` returns a handle with `Open`, `Close`, `Destroy` and `RemoveFromActive`. `Open` animates the notification in. `Close` animates it out and destroys it. `Destroy` removes it at once. `RemoveFromActive` drops it from the active list.
+
 ## Addons
 
 The addons write your settings to the file system of the executor. Each addon needs the library first. `BuildConfigSection` and `BuildInterfaceSection` take a tab. Each call adds a section to that tab.
+
+| Receiver | Method | Behavior |
+| --- | --- | --- |
+| Both | `SetLibrary(Library)` | Hands the library to the addon. |
+| Both | `BuildFolderTree()` | Creates the settings folders. |
+| SaveManager | `BuildConfigSection(Tab)` | Adds the configuration section to a tab. |
+| InterfaceManager | `BuildInterfaceSection(Tab)` | Adds the interface section to a tab. |
+| SaveManager | `SetFolder(Folder)` | Sets the root folder. |
+| SaveManager | `SetIgnoreIndexes(List)` | Skips the listed element keys when saving. |
+| SaveManager | `IgnoreThemeSettings()` | Skips `InterfaceTheme` and `MenuKeybind`. |
+| SaveManager | `Save(Name)` | Writes a config file. |
+| SaveManager | `Load(Name)` | Reads a config file. |
+| SaveManager | `RefreshConfigList()` | Returns the names of the config files. |
+| SaveManager | `LoadAutoloadConfig()` | Loads the config named in `autoload.txt`. |
+| InterfaceManager | `SetFolder(Folder)` | Sets the root folder. |
+| InterfaceManager | `SaveSettings()` | Writes `options.json`. |
+| InterfaceManager | `LoadSettings()` | Reads `options.json`. |
 
 ```lua
 SaveManager:SetLibrary(Fluent)
@@ -213,40 +314,25 @@ InterfaceManager:BuildInterfaceSection(Tab)
 
 The save manager keeps every saved file under one folder. The interface manager keeps the theme and the minimize key.
 
-## Build
+## Build and verify
 
-Install the tools. Build the files.
+Install the tools with `aftman install`. Aftman installs Rojo, Darklua, Lune and Selene. `pnpm` is not on the PATH.
 
-```bash
-aftman install
-pnpm install
-pnpm run bundle
+Run the specs, the linter and the bundle from PowerShell.
+
+```powershell
+$env:PATH = "$env:USERPROFILE\.aftman\bin;$env:PATH"
+lune.exe run spec/run.luau
+selene.exe src --config selene.toml
+lune.exe run build/init
 ```
 
-Aftman installs Rojo, Darklua, Lune and Selene. Make sure that `~/.aftman/bin` is in your `PATH`.
+The specs use the same `describe`, `it` and `expect` functions as the tests of the original Flipper library. You can also run them in Roblox Studio.
 
 The build writes two files to the `dist` folder.
 
 - `dist/main.rbxm` is the place model. Open it in Studio.
 - `dist/main.lua` is the bundled script. Load it with `loadstring`.
-
-When you only want the place model, run `pnpm run rojo`.
-
-## Tests
-
-The specs live in the `spec` folder. Run them with Lune.
-
-```bash
-pnpm run test
-```
-
-The specs use the same `describe`, `it` and `expect` functions as the tests of the original Flipper library. You can also run them in Roblox Studio.
-
-Run the linter with Selene.
-
-```bash
-pnpm run lint
-```
 
 ## Credits
 

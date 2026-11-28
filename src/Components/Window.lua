@@ -348,10 +348,27 @@ return function(Config)
 		ReclampToViewport()
 	end)
 
+	local function inputInside(Object, Position)
+		if not Object.Visible then
+			return false
+		end
+		local AbsolutePosition, AbsoluteSize = Object.AbsolutePosition, Object.AbsoluteSize
+		return Position.X >= AbsolutePosition.X
+			and Position.X <= AbsolutePosition.X + AbsoluteSize.X
+			and Position.Y >= AbsolutePosition.Y
+			and Position.Y <= AbsolutePosition.Y + AbsoluteSize.Y
+	end
+
 	Creator.AddSignal(Window.TitleBar.Frame.InputBegan, function(Input)
 		if
 			Input.UserInputType ~= Enum.UserInputType.MouseButton1
 			and Input.UserInputType ~= Enum.UserInputType.Touch
+		then
+			return
+		end
+
+		if inputInside(Window.TitleBar.SearchField, Input.Position)
+			or inputInside(Window.TitleBar.SearchResults, Input.Position)
 		then
 			return
 		end
@@ -545,8 +562,26 @@ return function(Config)
 		TabModule:OpenGroup(Name, true)
 	end
 
+	function Window:SetSearchQuery(Query)
+		Query = Query or ""
+		if Window.TitleBar then
+			Window.TitleBar.SearchBox.Text = Query
+			if Window.TitleBar.RefreshResults then
+				Window.TitleBar:RefreshResults(Query)
+			end
+		end
+	end
+
 	function Window:SetNavQuery(Query)
-		TabModule:SetNavQuery(Query)
+		Window:SetSearchQuery(Query)
+	end
+
+	function Window:FindElements(Query)
+		return TabModule:FindElementsByQuery(Query)
+	end
+
+	function Window:RevealElement(Result)
+		TabModule:RevealElement(Result)
 	end
 
 	function Window:SelectTab(Tab)

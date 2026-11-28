@@ -34,7 +34,7 @@ function Element:New(Idx, Config)
 
 	local ActiveDialog = nil
 
-	local ColorpickerFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, true)
+	local ColorpickerFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, true, Element.__type)
 
 	Colorpicker.SetTitle = ColorpickerFrame.SetTitle
 	Colorpicker.SetDesc = ColorpickerFrame.SetDesc

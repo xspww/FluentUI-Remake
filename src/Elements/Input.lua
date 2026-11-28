@@ -21,7 +21,7 @@ function Element:New(Idx, Config)
 		Type = "Input",
 	}
 
-	local InputFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, false)
+	local InputFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, false, Element.__type)
 
 	Input.SetTitle = InputFrame.SetTitle
 	Input.SetDesc = InputFrame.SetDesc

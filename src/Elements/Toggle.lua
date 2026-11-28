@@ -19,7 +19,7 @@ function Element:New(Idx, Config)
 		Type = "Toggle",
 	}
 
-	local ToggleFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, true)
+	local ToggleFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, true, Element.__type)
 	ToggleFrame.DescLabel.Size = UDim2.new(1, -54, 0, 14)
 
 	Toggle.SetTitle = ToggleFrame.SetTitle

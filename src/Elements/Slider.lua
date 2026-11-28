@@ -30,7 +30,7 @@ function Element:New(Idx, Config)
 	local DragTouch = nil
 	local InputLock = "Slider_" .. tostring(Idx)
 
-	local SliderFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, false)
+	local SliderFrame = require(Components.Element)(Config.Title, Config.Description, self.Container, false, Element.__type)
 	SliderFrame.DescLabel.Size = UDim2.new(1, -170, 0, 14)
 
 	Slider.SetTitle = SliderFrame.SetTitle

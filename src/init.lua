@@ -61,7 +61,7 @@ pcall(ProtectGui, GUI)
 NotificationModule:Init(GUI)
 
 local Library = {
-	Version = "1.1.0",
+	Version = "1.0.5",
 
 	OpenFrames = {},
 	Options = {},
@@ -306,7 +306,6 @@ function Library:CreateWindow(Config)
 
 	local Window = require(Components.Window)({
 		Parent = GUI,
-		Size = Config.Size,
 		Title = Config.Title,
 		SubTitle = Config.SubTitle,
 		TabWidth = Config.TabWidth,
